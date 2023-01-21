@@ -14,7 +14,7 @@ SRCS = $(patsubst ./%,%,$(shell find . -name "*.go"))
 GOLANGCI_LINT := $(GOPATH)/bin/golangci-lint
 
 build: $(SRCS)
-	$(GO_VARS) $(GO) build -a -installsuffix cgo -o {{short_binary}} -ldflags="$(LD_FLAGS)" -tags static main.go
+	$(GO_VARS) $(GO) build -a -installsuffix cgo -o dvs -ldflags="$(LD_FLAGS)" -tags static main.go
 
 format:
 	 which goimports || GO111MODULE=off GOPROXY=$(GOPROXY) go get -u golang.org/x/tools/cmd/goimports
@@ -59,7 +59,7 @@ deploy-dev: .env
 ## Project Vars ##########################################################
 ROOT := github.com/arimanius/digivision-backend
 DOCKER_IMAGE := ghcr.io/arimanius/digivision-backend
-.PHONY: help clean update-dependencies test docker push deploy test-docker
+.PHONY: help clean update-dependencies test docker
 
 ## Commons Vars ##########################################################
 OS = $(shell echo $(shell uname -s) | tr '[:upper:]' '[:lower:]')
@@ -69,5 +69,5 @@ GO ?= go
 GIT ?= git
 COMMIT := $(shell $(GIT) rev-parse HEAD)
 BUILD_TIME := $(shell LANG=en_US date +"%F_%T_%z")
-LD_FLAGS := -X $(ROOT).Version=$(VERSION) -X $(ROOT).Commit=$(COMMIT) -X $(ROOT).BuildTime=$(BUILD_TIME) -X $(ROOT).Title={{short_binary}}
+LD_FLAGS := -X $(ROOT).Version=$(VERSION) -X $(ROOT).Commit=$(COMMIT) -X $(ROOT).BuildTime=$(BUILD_TIME) -X $(ROOT).Title=dvs
 GOLANGCI_LINT_VERSION ?= v1.45.2

@@ -3,12 +3,12 @@ env: dev
 log:
   level: debug
 
-sentry:
-  timeout: 100ms
-
 server:
   port: 50051
   host: 0.0.0.0
+
+httpServer:
+  port: 8080
 
 prometheus:
   enabled: true
