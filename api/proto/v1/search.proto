@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+option go_package = "./;v1";
+package v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+message SearchRequest {
+  bytes image = 1;
+  int32 top_k = 2;
+}
+
+message Rating {
+  int32 rate = 1;
+  int32 count = 2;
+}
+
+message Category {
+  string title = 1;
+  string url = 2;
+}
+
+message Product {
+  int32 id = 1;
+  float score = 2;
+  string title = 3;
+  string url = 4;
+  string status = 5;
+  string image_url = 6;
+  Rating rate = 7;
+  repeated Category categories = 8;
+  int64 price = 9;
+}
+
+message SearchResponse {
+  repeated Product products = 1;
+}
+
+message CropRequest {
+  bytes image = 1;
+}
+
+message Position {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+message CropResponse {
+  Position top_left = 1;
+  Position bottom_right = 2;
+}
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+  info: {
+    title: "Digivision API";
+    version: "1.0";
+  };
+  external_docs: {
+    url: "https://github.com/arimanius/digivision-backend";
+    description: "Reverse Image Search on Digikala gRPC service with REST/HTTP gateway";
+  }
+  schemes: HTTPS;
+  consumes: "application/json";
+  produces: "application/json";
+  responses: {
+    key: "404";
+    value: {
+      description: "Returned when the resource does not exist.";
+      schema: {
+        json_schema: {
+          type: STRING;
+        }
+      }
+    }
+  }
+};
+
+service SearchService {
+  rpc Search(SearchRequest) returns (SearchResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/search"
+      body: "*"
+    };
+  }
+  rpc Crop(CropRequest) returns (CropResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/crop"
+      body: "*"
+    };
+  }
+}

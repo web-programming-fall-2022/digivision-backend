@@ -1,0 +1,24 @@
+linters-settings:
+  lll:
+    line-length: 140
+
+linters:
+  enable:
+    - bodyclose
+    - goimports
+    - unconvert
+    - dupl
+    - goconst
+    - gocyclo
+    - gocognit
+    - goimports
+    - lll
+    - unparam
+    - nakedret
+    - gochecknoinits
+    - gochecknoglobals
+    - funlen
+    - whitespace
+    - godot
+    - testpackage
+    - nestif
