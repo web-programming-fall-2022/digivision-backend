@@ -3,7 +3,6 @@ module github.com/arimanius/digivision-backend
 go 1.19
 
 require (
-	git.cafebazaar.ir/map/balad-go-utils v0.0.5
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0

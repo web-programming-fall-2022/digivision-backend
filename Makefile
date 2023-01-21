@@ -43,7 +43,7 @@ test:
 	$(GO_VARS) $(GO) tool cover -func=coverage.out
 
 docker-build:
-	docker build --build-arg GIT_USERNAME=$(PROTO_GIT_USERNAME) --build-arg  GIT_PASSWORD=$(PROTO_GIT_PASSWORD) -t $(DOCKER_IMAGE):$(VERSION) -- .
+	docker build -t $(DOCKER_IMAGE):$(VERSION) -- .
 	docker tag $(DOCKER_IMAGE):$(VERSION) $(DOCKER_IMAGE):latest
 
 docker-push:
