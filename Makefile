@@ -22,7 +22,7 @@ format:
 	 find . -type f -name "*.go" | xargs -n 1 -I R gofmt -s -w R
 
 clean:
-	rm -rf {{short_binary}}
+	rm -rf dvs
 
 download-dependencies:
 	GOSUMDB=off GOPROXY=$(GOPROXY) GOPRIVATE=$(GOPRIVATE) go mod download

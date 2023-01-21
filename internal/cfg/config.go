@@ -12,6 +12,10 @@ type Config struct {
 	}
 
 	bootstrap.GrpcServerRunnerConfig `mapstructure:",squash" yaml:",inline"`
+
+	HttpServer struct {
+		Port int
+	}
 }
 
 func (c *Config) Validate() error {

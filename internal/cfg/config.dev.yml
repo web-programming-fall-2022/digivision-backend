@@ -1,0 +1,16 @@
+env: dev
+
+log:
+  level: debug
+
+sentry:
+  timeout: 100ms
+
+server:
+  port: 50051
+  host: 0.0.0.0
+
+prometheus:
+  enabled: true
+  host: 0.0.0.0
+  port: 8000

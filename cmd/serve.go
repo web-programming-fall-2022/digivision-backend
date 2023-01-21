@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
@@ -35,11 +36,14 @@ func serve(cmd *cobra.Command) {
 	config := loadConfig(cmd)
 	bootstrap.AdjustLogLevel(config.Log.Level)
 
-	var terminableJobs []job.WithGracefulShutDown
-	terminableJobs = append(terminableJobs, server.RunServer(config))
+	ctx := context.Background()
+
+	var terminableJobs []job.WithGracefulShutdown
+	terminableJobs = append(terminableJobs, server.RunServer(ctx, config))
+	terminableJobs = append(terminableJobs, server.RunHttpServer(ctx, config))
 	terminableJobs = append(terminableJobs, jobs.StartJobs(config)...)
 
-	terminateOnSignals(terminableJobs)
+	terminateOnSignals(ctx, terminableJobs)
 }
 
 func loadConfig(cmd *cobra.Command) cfg.Config {
@@ -55,14 +59,14 @@ func loadConfig(cmd *cobra.Command) cfg.Config {
 	return cfg.ParseConfig("")
 }
 
-func terminateOnSignals(terminableJobs []job.WithGracefulShutDown) {
+func terminateOnSignals(ctx context.Context, terminableJobs []job.WithGracefulShutdown) {
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, syscall.SIGINT)
 	signal.Notify(c, syscall.SIGTERM)
 	sig := <-c
 	logrus.Infof("Received sig-%s.\n", sig.String())
 
-	if err := job.ShutDown(terminableJobs, 5*time.Second); err != nil {
+	if err := job.Shutdown(ctx, terminableJobs, 5*time.Second); err != nil {
 		logrus.Error(err.Error())
 	}
 }

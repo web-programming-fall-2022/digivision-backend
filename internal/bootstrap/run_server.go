@@ -26,11 +26,11 @@ import (
 )
 
 // GrpcServerRunner is used to painlessly run a gRPC sever. Use GetGrpcServer to register your service(s).
-// ShutDown will shut it down gracefully.
+// Shutdown will shut it down gracefully.
 type GrpcServerRunner interface {
 	GetGrpcServer() *grpc.Server
-	Run() error
-	ShutDown(ctx context.Context) error
+	Run(ctx context.Context) error
+	Shutdown(ctx context.Context) error
 }
 
 func NewGrpcServerRunner(config GrpcServerRunnerConfig) (GrpcServerRunner, error) {
@@ -91,14 +91,14 @@ type grpcServerRunner struct {
 type terminableResources struct {
 	netListener net.Listener
 	grpcServer  *grpc.Server
-	jobs        []job.WithGracefulShutDown
+	jobs        []job.WithGracefulShutdown
 }
 
 func (r *grpcServerRunner) GetGrpcServer() *grpc.Server {
 	return r.grpcServer
 }
 
-func (r *grpcServerRunner) ShutDown(ctx context.Context) error {
+func (r *grpcServerRunner) Shutdown(ctx context.Context) error {
 	r.shutDownReqChan <- true
 	select {
 	case <-r.shutDownDoneChan:
@@ -144,8 +144,8 @@ func (r *grpcServerRunner) closeConnection() {
 	}
 }
 
-func (r *grpcServerRunner) Run() (runErr error) {
-	var terminableJobs []job.WithGracefulShutDown
+func (r *grpcServerRunner) Run(ctx context.Context) (runErr error) {
+	var terminableJobs []job.WithGracefulShutdown
 
 	go func() {
 		logrus.Infof("GRPC Listening on %s", r.config.grpcAddress())
@@ -188,7 +188,7 @@ func (r *grpcServerRunner) Run() (runErr error) {
 	if r.config.Server.Port != 0 {
 		terminableResources.netListener = r.netListener
 	}
-	r.waitForTermination(terminableResources)
+	r.waitForTermination(ctx, terminableResources)
 	return
 }
 
@@ -246,7 +246,7 @@ func (r *grpcServerRunner) newServerTLSFromFile(certFile, keyFile string) (crede
 	return credentials.NewTLS(&tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true}), nil
 }
 
-func (r *grpcServerRunner) shutDownServices(resources terminableResources) {
+func (r *grpcServerRunner) shutdownServices(ctx context.Context, resources terminableResources) {
 	logrus.Info("Stopping GRPC server and all jobs.")
 	r.runAndWait(
 		func() {
@@ -259,7 +259,7 @@ func (r *grpcServerRunner) shutDownServices(resources terminableResources) {
 			}
 		},
 		func() {
-			if err := job.ShutDown(resources.jobs, 15*time.Second); err != nil {
+			if err := job.Shutdown(ctx, resources.jobs, 15*time.Second); err != nil {
 				if r.shutDownError != nil {
 					logrus.Error(err.Error())
 				} else {
@@ -284,7 +284,7 @@ func (r *grpcServerRunner) runAndWait(functions ...func()) {
 	wg.Wait()
 }
 
-func (r *grpcServerRunner) waitForTermination(resources terminableResources) {
+func (r *grpcServerRunner) waitForTermination(ctx context.Context, resources terminableResources) {
 	<-r.shutDownReqChan
-	r.shutDownServices(resources)
+	r.shutdownServices(ctx, resources)
 }

@@ -8,19 +8,19 @@ import (
 	"time"
 )
 
-type WithGracefulShutDown interface {
-	ShutDown(ctx context.Context) error
+type WithGracefulShutdown interface {
+	Shutdown(ctx context.Context) error
 }
 
-func ShutDown(processes []WithGracefulShutDown, duration time.Duration) (shutdownError error) {
-	ctx, cancel := context.WithTimeout(context.Background(), duration)
+func Shutdown(ctx context.Context, processes []WithGracefulShutdown, duration time.Duration) (shutdownError error) {
+	ctx, cancel := context.WithTimeout(ctx, duration)
 	defer cancel()
 	wg := &sync.WaitGroup{}
 	for i := range processes {
 		wg.Add(1)
 		process := processes[i] // Beware of https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		go func() {
-			if err := process.ShutDown(ctx); err != nil {
+			if err := process.Shutdown(ctx); err != nil {
 				curErr := fmt.Errorf("error in shutting down service: %v", err)
 				if shutdownError != nil {
 					logrus.Error(curErr.Error())
