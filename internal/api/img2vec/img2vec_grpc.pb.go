@@ -35,7 +35,7 @@ func NewImg2VecClient(cc grpc.ClientConnInterface) Img2VecClient {
 
 func (c *img2VecClient) Vectorize(ctx context.Context, in *Image, opts ...grpc.CallOption) (*Vector, error) {
 	out := new(Vector)
-	err := c.cc.Invoke(ctx, "/img2vec.Img2Vec/Vectorize", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/img2vec.Img2Vec/Detect", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ type UnimplementedImg2VecServer struct {
 }
 
 func (UnimplementedImg2VecServer) Vectorize(context.Context, *Image) (*Vector, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Vectorize not implemented")
+	return nil, status.Errorf(codes.Unimplemented, "method Detect not implemented")
 }
 func (UnimplementedImg2VecServer) mustEmbedUnimplementedImg2VecServer() {}
 
@@ -80,7 +80,7 @@ func _Img2Vec_Vectorize_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/img2vec.Img2Vec/Vectorize",
+		FullMethod: "/img2vec.Img2Vec/Detect",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(Img2VecServer).Vectorize(ctx, req.(*Image))
@@ -96,7 +96,7 @@ var Img2Vec_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*Img2VecServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Vectorize",
+			MethodName: "Detect",
 			Handler:    _Img2Vec_Vectorize_Handler,
 		},
 	},

@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	img2vecPb "github.com/arimanius/digivision-backend/internal/api/img2vec"
+	odPb "github.com/arimanius/digivision-backend/internal/api/od"
 	"github.com/arimanius/digivision-backend/internal/bootstrap"
 	"github.com/arimanius/digivision-backend/internal/bootstrap/job"
 	"github.com/arimanius/digivision-backend/internal/cfg"
 	"github.com/arimanius/digivision-backend/internal/img2vec"
+	"github.com/arimanius/digivision-backend/internal/od"
 	"github.com/arimanius/digivision-backend/internal/rank"
 	"github.com/arimanius/digivision-backend/internal/search"
 	pb "github.com/arimanius/digivision-backend/pkg/api/v1"
@@ -69,7 +71,30 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 	// Create the Ranker service
 	ranker := rank.NewFirstImageRanker()
 
-	registerServer(grpcServer, i2v, searchHandler, ranker)
+	// Create the object detector service
+	odConnection, err := grpc.Dial(config.ObjectDetector.Addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(
+			grpcRetry.UnaryClientInterceptor(
+				grpcRetry.WithMax(6),
+				grpcRetry.WithBackoff(func(attempt uint) time.Duration {
+					return 60 * time.Millisecond * time.Duration(math.Pow(3, float64(attempt)))
+				}),
+				grpcRetry.WithCodes(codes.Unavailable, codes.ResourceExhausted)),
+		))
+	if err != nil {
+		logrus.Fatal(err.Error())
+	}
+	defer func(odConnection *grpc.ClientConn) {
+		err := odConnection.Close()
+		if err != nil {
+			logrus.Fatal(err.Error())
+		}
+	}(odConnection)
+	odClient := odPb.NewObjectDetectorClient(odConnection)
+	objectDetector := od.NewGrpcObjectDetector(odClient)
+
+	registerServer(grpcServer, i2v, searchHandler, ranker, objectDetector)
 
 	go func() {
 		if err := serverRunner.Run(ctx); err != nil {
@@ -79,8 +104,8 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 	return serverRunner
 }
 
-func registerServer(server *grpc.Server, i2v img2vec.Img2Vec, searchHandler search.Handler, ranker rank.Ranker) {
-	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(i2v, searchHandler, ranker))
+func registerServer(server *grpc.Server, i2v img2vec.Img2Vec, searchHandler search.Handler, ranker rank.Ranker, objectDetector od.ObjectDetector) {
+	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(i2v, searchHandler, ranker, objectDetector))
 }
 
 func RunHttpServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown {

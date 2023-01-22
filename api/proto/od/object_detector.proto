@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option go_package = "./;od";
+package object_detector;
+
+message Image {
+  bytes image = 1;
+}
+
+message Position {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+message BoundingBox {
+  Position top_left = 1;
+  Position bottom_right = 2;
+}
+
+service ObjectDetector {
+  rpc Detect (Image) returns (BoundingBox) {}
+}

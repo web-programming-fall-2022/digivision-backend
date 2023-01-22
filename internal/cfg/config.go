@@ -29,6 +29,10 @@ type Config struct {
 		NProbe         int
 		CollectionName string
 	}
+
+	ObjectDetector struct {
+		Addr string
+	}
 }
 
 func (c *Config) Validate() error {

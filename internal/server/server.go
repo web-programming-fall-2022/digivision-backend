@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"github.com/arimanius/digivision-backend/internal/img2vec"
+	"github.com/arimanius/digivision-backend/internal/od"
 	"github.com/arimanius/digivision-backend/internal/productmeta"
 	"github.com/arimanius/digivision-backend/internal/rank"
 	"github.com/arimanius/digivision-backend/internal/search"
@@ -14,21 +15,24 @@ import (
 
 type SearchServiceServer struct {
 	pb.UnimplementedSearchServiceServer
-	img2vec       img2vec.Img2Vec
-	searchHandler search.Handler
-	ranker        rank.Ranker
-	fetcher       productmeta.Fetcher
+	img2vec        img2vec.Img2Vec
+	searchHandler  search.Handler
+	ranker         rank.Ranker
+	objectDetector od.ObjectDetector
+	fetcher        productmeta.Fetcher
 }
 
 func NewSearchServiceServer(
 	i2v img2vec.Img2Vec,
 	searchHandler search.Handler,
 	ranker rank.Ranker,
+	objectDetector od.ObjectDetector,
 ) *SearchServiceServer {
 	return &SearchServiceServer{
-		img2vec:       i2v,
-		searchHandler: searchHandler,
-		ranker:        ranker,
+		img2vec:        i2v,
+		searchHandler:  searchHandler,
+		ranker:         ranker,
+		objectDetector: objectDetector,
 	}
 }
 
@@ -54,5 +58,18 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 }
 
 func (s *SearchServiceServer) Crop(ctx context.Context, req *pb.CropRequest) (*pb.CropResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "not implemented")
+	topLeft, bottomRight, err := s.objectDetector.Detect(ctx, req.Image)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to detect object: %v", err)
+	}
+	return &pb.CropResponse{
+		TopLeft: &pb.Position{
+			X: int32(topLeft.X),
+			Y: int32(topLeft.Y),
+		},
+		BottomRight: &pb.Position{
+			X: int32(bottomRight.X),
+			Y: int32(bottomRight.Y),
+		},
+	}, nil
 }
