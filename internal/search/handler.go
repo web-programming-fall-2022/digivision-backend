@@ -9,5 +9,5 @@ type ProductImage struct {
 }
 
 type Handler interface {
-	Search(ctx context.Context, domain string, vendor string, query []float32, topK int) ([]ProductImage, error)
+	Search(ctx context.Context, query []float32, topK int) ([]ProductImage, error)
 }
