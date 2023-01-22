@@ -3,6 +3,7 @@ package cfg
 import (
 	"github.com/arimanius/digivision-backend/internal/bootstrap"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 )
 
 type Config struct {
@@ -15,6 +16,18 @@ type Config struct {
 
 	HttpServer struct {
 		Port int
+	}
+
+	Img2Vec struct {
+		Addr string
+	}
+
+	Milvus struct {
+		Addr           string
+		VectorDim      int
+		MetricType     entity.MetricType
+		NProbe         int
+		CollectionName string
 	}
 }
 

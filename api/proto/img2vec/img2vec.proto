@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option go_package = "./;img2vec";
+package img2vec;
+
+message Image {
+  bytes image = 1;
+}
+
+message Vector {
+  repeated float vector = 1;
+}
+
+service Img2Vec {
+  rpc Vectorize (Image) returns (Vector) {}
+}
