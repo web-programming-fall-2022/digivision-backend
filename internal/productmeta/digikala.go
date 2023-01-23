@@ -46,7 +46,7 @@ func (f DigikalaFetcher) Fetch(ctx context.Context, productId string) (*v1.Produ
 	price := int64(0)
 	switch variant := p.DefaultVariant.(type) {
 	case Variant:
-		price = variant.SellingPrice
+		price = variant.Price.SellingPrice
 	}
 	return &v1.Product{
 		Id:       int32(pid),

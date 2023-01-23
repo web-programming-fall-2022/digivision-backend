@@ -13,7 +13,9 @@ type Breadcrumb struct {
 }
 
 type Variant struct {
-	SellingPrice int64 `json:"selling_price"`
+	Price struct {
+		SellingPrice int64 `json:"selling_price"`
+	} `json:"price"`
 }
 
 type DigikalaProduct struct {
@@ -22,17 +24,17 @@ type DigikalaProduct struct {
 			TitleFa string `json:"title_fa"`
 			Url     struct {
 				Uri string `json:"uri"`
-			}
+			} `json:"url"`
 			Status string `json:"status"`
 			Images struct {
 				Main struct {
 					Url []string `json:"url"`
 				}
-			}
+			} `json:"images"`
 			Rating struct {
 				Rate  int32 `json:"rate"`
 				Count int32 `json:"count"`
-			}
+			} `json:"rating"`
 			Breadcrumb     []Breadcrumb `json:"breadcrumb"`
 			DefaultVariant interface{}  `json:"default_variant"`
 		}
