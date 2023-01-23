@@ -1,8 +1,10 @@
 package productmeta
 
 import (
+	"encoding/json"
 	"fmt"
 	v1 "github.com/arimanius/digivision-backend/pkg/api/v1"
+	"github.com/pkg/errors"
 )
 
 type Breadcrumb struct {
@@ -16,6 +18,27 @@ type Variant struct {
 	Price struct {
 		SellingPrice int64 `json:"selling_price"`
 	} `json:"price"`
+}
+
+func (v *Variant) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 || string(data) == "null" || (data[0] == '[' && data[len(data)-1] == ']') {
+		return nil
+	}
+	if data[0] == '{' && data[len(data)-1] == '}' { // object?
+		type TempVariant struct {
+			Price struct {
+				SellingPrice int64 `json:"selling_price"`
+			} `json:"price"`
+		}
+		var tempVariant TempVariant
+		err := json.Unmarshal(data, &tempVariant)
+		if err != nil {
+			return err
+		}
+		v.Price.SellingPrice = tempVariant.Price.SellingPrice
+		return nil
+	}
+	return errors.New("invalid variant")
 }
 
 type DigikalaProduct struct {
@@ -36,7 +59,7 @@ type DigikalaProduct struct {
 				Count int32 `json:"count"`
 			} `json:"rating"`
 			Breadcrumb     []Breadcrumb `json:"breadcrumb"`
-			DefaultVariant interface{}  `json:"default_variant"`
+			DefaultVariant Variant      `json:"default_variant"`
 		}
 	}
 }

@@ -43,11 +43,6 @@ func (f DigikalaFetcher) Fetch(ctx context.Context, productId string) (*v1.Produ
 		return nil, err
 	}
 	p := product.Data.Product
-	price := int64(0)
-	switch variant := p.DefaultVariant.(type) {
-	case Variant:
-		price = variant.Price.SellingPrice
-	}
 	return &v1.Product{
 		Id:       int32(pid),
 		Title:    p.TitleFa,
@@ -59,6 +54,6 @@ func (f DigikalaFetcher) Fetch(ctx context.Context, productId string) (*v1.Produ
 			Count: p.Rating.Count,
 		},
 		Categories: ToCategories(f.baseUrl, p.Breadcrumb),
-		Price:      price,
+		Price:      p.DefaultVariant.Price.SellingPrice,
 	}, nil
 }
