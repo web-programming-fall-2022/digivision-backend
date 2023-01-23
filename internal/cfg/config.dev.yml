@@ -20,6 +20,10 @@ img2vec:
 
 milvus:
   addr: localhost:19530
+  vectorDim: 768
+  metricType: L2
+  nProbe: 19
+  collectionName: products_revis_digikala_clip_ViT_L_14_336px
 
 objectDetector:
   addr: localhost:50052
