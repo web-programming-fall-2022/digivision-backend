@@ -45,9 +45,12 @@ func (b Breadcumb) ToCategory(baseUrl string) *v1.Category {
 }
 
 func ToCategories(baseUrl string, breadcrumb []Breadcumb) []*v1.Category {
-	categories := make([]*v1.Category, len(breadcrumb))
-	for _, b := range breadcrumb {
-		categories = append(categories, b.ToCategory(baseUrl))
+	categories := make([]*v1.Category, len(breadcrumb)-1)
+	for i, b := range breadcrumb {
+		if i == len(breadcrumb)-1 {
+			break
+		}
+		categories[i] = b.ToCategory(baseUrl)
 	}
 	return categories
 }

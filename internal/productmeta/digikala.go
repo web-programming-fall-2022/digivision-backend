@@ -45,7 +45,7 @@ func (f DigikalaFetcher) Fetch(ctx context.Context, productId string) (*v1.Produ
 		Title:    p.TitleFa,
 		Url:      fmt.Sprintf("%s%s", f.baseUrl, p.Url),
 		Status:   p.Status,
-		ImageUrl: fmt.Sprintf("%s%s", f.baseUrl, p.Images.Main.Url[0]),
+		ImageUrl: p.Images.Main.Url[0],
 		Rate: &v1.Rating{
 			Rate:  p.Rating.Rate,
 			Count: p.Rating.Count,
