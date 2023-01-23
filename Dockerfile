@@ -1,4 +1,4 @@
-FROM golang:1.17.2-alpine AS builder
+FROM golang:1.19.5-alpine AS builder
 RUN sed -i 's|dl-cdn.alpinelinux.org|repos.balad.ir/artifactory|g' /etc/apk/repositories
 RUN apk update && apk add --no-cache git make openssh-client curl ca-certificates
 RUN update-ca-certificates
