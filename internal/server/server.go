@@ -55,7 +55,7 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 		}
 		p.Score = product.Score
 		return p, nil
-	}, products)
+	}, products[:req.TopK])
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to fetch products: %v", err)
 	}

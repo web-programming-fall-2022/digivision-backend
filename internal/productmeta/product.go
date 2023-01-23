@@ -12,6 +12,10 @@ type Breadcumb struct {
 	}
 }
 
+type Variant struct {
+	SellingPrice int64 `json:"selling_price"`
+}
+
 type DigikalaProduct struct {
 	Data struct {
 		Product struct {
@@ -29,10 +33,8 @@ type DigikalaProduct struct {
 				Rate  int32 `json:"rate"`
 				Count int32 `json:"count"`
 			}
-			Breadcrumb     []Breadcumb `json:"breadcrumb"`
-			DefaultVariant struct {
-				SellingPrice int64 `json:"selling_price"`
-			} `json:"default_variant"`
+			Breadcrumb     []Breadcrumb `json:"breadcrumb"`
+			DefaultVariant interface{}  `json:"default_variant"`
 		}
 	}
 }

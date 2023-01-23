@@ -148,8 +148,8 @@ var file_img2vec_proto_goTypes = []interface{}{
 	(*Vector)(nil), // 1: img2vec.Vector
 }
 var file_img2vec_proto_depIdxs = []int32{
-	0, // 0: img2vec.Img2Vec.Detect:input_type -> img2vec.Image
-	1, // 1: img2vec.Img2Vec.Detect:output_type -> img2vec.Vector
+	0, // 0: img2vec.Img2Vec.Vectorize:input_type -> img2vec.Image
+	1, // 1: img2vec.Img2Vec.Vectorize:output_type -> img2vec.Vector
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

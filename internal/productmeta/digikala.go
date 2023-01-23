@@ -34,12 +34,20 @@ func (f DigikalaFetcher) Fetch(ctx context.Context, productId string) (*v1.Produ
 	if err != nil {
 		return nil, err
 	}
+	if resp.Status() != "200 OK" {
+		return nil, fmt.Errorf("failed to fetch product %s. status: %s", productId, resp.Status())
+	}
 	product := DigikalaProduct{}
 	err = json.Unmarshal(resp.Body(), &product)
 	if err != nil {
 		return nil, err
 	}
 	p := product.Data.Product
+	price := int64(0)
+	switch variant := p.DefaultVariant.(type) {
+	case Variant:
+		price = variant.SellingPrice
+	}
 	return &v1.Product{
 		Id:       int32(pid),
 		Title:    p.TitleFa,
@@ -51,6 +59,6 @@ func (f DigikalaFetcher) Fetch(ctx context.Context, productId string) (*v1.Produ
 			Count: p.Rating.Count,
 		},
 		Categories: ToCategories(f.baseUrl, p.Breadcrumb),
-		Price:      p.DefaultVariant.SellingPrice,
+		Price:      price,
 	}, nil
 }

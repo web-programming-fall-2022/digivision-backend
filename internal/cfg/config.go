@@ -41,7 +41,11 @@ func (c *Config) Validate() error {
 		"log.level": validation.Validate(c.Log.Level, validation.Required, validation.In(
 			"panic", "fatal", "error", "warn", "info", "debug", "trace",
 		)),
-		"server.host": validation.Validate(c.Server.Host, validation.Required),
-		"server.port": validation.Validate(c.Server.Port, validation.Required),
+		"server.host":           validation.Validate(c.Server.Host, validation.Required),
+		"server.port":           validation.Validate(c.Server.Port, validation.Required),
+		"milvus.vectorDim":      validation.Validate(c.Milvus.VectorDim, validation.Required),
+		"milvus.metricType":     validation.Validate(c.Milvus.MetricType, validation.Required),
+		"milvus.nProbe":         validation.Validate(c.Milvus.NProbe, validation.Required),
+		"milvus.collectionName": validation.Validate(c.Milvus.CollectionName, validation.Required),
 	}.Filter()
 }
