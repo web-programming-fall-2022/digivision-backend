@@ -10,9 +10,11 @@ import (
 	"github.com/arimanius/digivision-backend/internal/cfg"
 	"github.com/arimanius/digivision-backend/internal/img2vec"
 	"github.com/arimanius/digivision-backend/internal/od"
+	"github.com/arimanius/digivision-backend/internal/productmeta"
 	"github.com/arimanius/digivision-backend/internal/rank"
 	"github.com/arimanius/digivision-backend/internal/search"
 	pb "github.com/arimanius/digivision-backend/pkg/api/v1"
+	"github.com/go-resty/resty/v2"
 	grpcRetry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
@@ -89,7 +91,14 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 	objectDetector := od.NewGrpcObjectDetector(odClient)
 	logrus.Infoln("od client created")
 
-	registerServer(grpcServer, i2v, searchHandler, ranker, objectDetector)
+	httpClient := resty.New()
+	fetcher := productmeta.NewDigikalaFetcher(
+		"https://www.digikala.com",
+		"https://api.digikala.com/v1/product/",
+		httpClient,
+	)
+
+	registerServer(grpcServer, i2v, searchHandler, fetcher, ranker, objectDetector)
 
 	go func() {
 		logrus.Infoln("Starting grpc server...")
@@ -100,8 +109,8 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 	return serverRunner
 }
 
-func registerServer(server *grpc.Server, i2v img2vec.Img2Vec, searchHandler search.Handler, ranker rank.Ranker, objectDetector od.ObjectDetector) {
-	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(i2v, searchHandler, ranker, objectDetector))
+func registerServer(server *grpc.Server, i2v img2vec.Img2Vec, searchHandler search.Handler, fetcher productmeta.Fetcher, ranker rank.Ranker, objectDetector od.ObjectDetector) {
+	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(i2v, searchHandler, fetcher, ranker, objectDetector))
 }
 
 func RunHttpServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown {

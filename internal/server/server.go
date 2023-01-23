@@ -25,12 +25,14 @@ type SearchServiceServer struct {
 func NewSearchServiceServer(
 	i2v img2vec.Img2Vec,
 	searchHandler search.Handler,
+	fetcher productmeta.Fetcher,
 	ranker rank.Ranker,
 	objectDetector od.ObjectDetector,
 ) *SearchServiceServer {
 	return &SearchServiceServer{
 		img2vec:        i2v,
 		searchHandler:  searchHandler,
+		fetcher:        fetcher,
 		ranker:         ranker,
 		objectDetector: objectDetector,
 	}
