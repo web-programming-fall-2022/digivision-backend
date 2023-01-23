@@ -47,7 +47,12 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 	}
 	products := s.ranker.Rank(productImages)
 	fetchedProducts, err := utils.ConcurrentMap(func(product rank.Product) (*pb.Product, error) {
-		return s.fetcher.Fetch(ctx, product.Id)
+		p, err := s.fetcher.Fetch(ctx, product.Id)
+		if err != nil {
+			return nil, err
+		}
+		p.Score = product.Distance
+		return p, nil
 	}, products)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to fetch products: %v", err)
