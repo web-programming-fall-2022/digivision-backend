@@ -5,6 +5,7 @@ import (
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 	"github.com/pkg/errors"
+	"strconv"
 )
 
 const (
@@ -60,16 +61,16 @@ func (h MilvusSearchHandler) Search(ctx context.Context, query []float32, topK i
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to conduct search")
 	}
-	ids, ok := searchResult[0].Fields[0].(*entity.ColumnString)
+	imageIds, ok := searchResult[0].IDs.(*entity.ColumnInt64)
 	if !ok {
-		return nil, errors.New("failed to convert search result to string column")
+		return nil, errors.New("failed to convert pk to string column")
 	}
-	imageIds, ok := searchResult[0].IDs.(*entity.ColumnString)
+	ids, ok := searchResult[0].Fields[0].(*entity.ColumnVarChar)
 	if !ok {
-		return nil, errors.New("failed to convert search result to string column")
+		return nil, errors.New("failed to convert product id to string column")
 	}
-	scores := searchResult[0].Scores
-	productImages := ids2ProductImages(ids.Data(), imageIds.Data(), scores)
+	distances := searchResult[0].Scores
+	productImages := ids2ProductImages(ids.Data(), imageIds.Data(), distances)
 	err = h.client.ReleaseCollection(ctx, h.collectionName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to release the partition")
@@ -77,13 +78,13 @@ func (h MilvusSearchHandler) Search(ctx context.Context, query []float32, topK i
 	return productImages, nil
 }
 
-func ids2ProductImages(ids []string, imageIds []string, scores []float32) []ProductImage {
+func ids2ProductImages(ids []string, imageIds []int64, distances []float32) []ProductImage {
 	products := make([]ProductImage, len(ids))
 	for i := range ids {
 		products[i] = ProductImage{
 			ProductId: ids[i],
-			ImageId:   imageIds[i],
-			Score:     scores[i],
+			ImageId:   strconv.FormatInt(imageIds[i], 10),
+			Distance:  distances[i],
 		}
 	}
 	return products

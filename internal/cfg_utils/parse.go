@@ -3,6 +3,7 @@ package cfg_utils
 import (
 	"bytes"
 	"fmt"
+	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 	"gopkg.in/yaml.v2"
 	"strings"
 
@@ -30,6 +31,11 @@ func newViper(prefix, configPath string, config Config) (*viper.Viper, error) {
 	v := viper.New()
 
 	v.SetDefault("prometheus.buckets", []float64{0.05, 0.1, 0.2, 0.5, 1, 2, 5})
+	v.SetDefault("prometheus.prefix", "metrics")
+	v.SetDefault("milvus.vectorDim", 768)
+	v.SetDefault("milvus.metricType", entity.L2)
+	v.SetDefault("milvus.nProbe", 16)
+	v.SetDefault("milvus.collectionName", "products_revis_digikala_clip_ViT_L_14_336px")
 
 	v.SetConfigType("yaml")
 	v.SetEnvPrefix(prefix)

@@ -44,32 +44,31 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 				}),
 				grpcRetry.WithCodes(codes.Unavailable, codes.ResourceExhausted)),
 		))
+	logrus.Infoln("connection to img2vec service established")
 	if err != nil {
 		logrus.Fatal(err.Error())
 	}
-	defer func(img2vecConnection *grpc.ClientConn) {
-		err := img2vecConnection.Close()
-		if err != nil {
-			logrus.Fatal(err.Error())
-		}
-	}(img2vecConnection)
 	img2vecClient := img2vecPb.NewImg2VecClient(img2vecConnection)
 	i2v := img2vec.NewGrpcImg2Vec(img2vecClient)
+	logrus.Infoln("img2vec client created")
 
 	// Create the SearchHandler service
 	milvusClient, err := client.NewGrpcClient(ctx, config.Milvus.Addr)
 	if err != nil {
 		logrus.Fatal(err.Error())
 	}
+	logrus.Infoln("connection to milvus service established")
 	searchHandler := search.NewMilvusSearchHandler(
 		milvusClient,
 		config.Milvus.VectorDim,
 		config.Milvus.MetricType,
 		config.Milvus.NProbe,
 		config.Milvus.CollectionName)
+	logrus.Infoln("searchHandler client created")
 
 	// Create the Ranker service
 	ranker := rank.NewFirstImageRanker()
+	logrus.Infoln("ranker created")
 
 	// Create the object detector service
 	odConnection, err := grpc.Dial(config.ObjectDetector.Addr,
@@ -82,21 +81,18 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 				}),
 				grpcRetry.WithCodes(codes.Unavailable, codes.ResourceExhausted)),
 		))
+	logrus.Infoln("connection to od service established")
 	if err != nil {
 		logrus.Fatal(err.Error())
 	}
-	defer func(odConnection *grpc.ClientConn) {
-		err := odConnection.Close()
-		if err != nil {
-			logrus.Fatal(err.Error())
-		}
-	}(odConnection)
 	odClient := odPb.NewObjectDetectorClient(odConnection)
 	objectDetector := od.NewGrpcObjectDetector(odClient)
+	logrus.Infoln("od client created")
 
 	registerServer(grpcServer, i2v, searchHandler, ranker, objectDetector)
 
 	go func() {
+		logrus.Infoln("Starting grpc server...")
 		if err := serverRunner.Run(ctx); err != nil {
 			logrus.Fatal(err.Error())
 		}

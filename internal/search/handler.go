@@ -5,7 +5,7 @@ import "context"
 type ProductImage struct {
 	ProductId string
 	ImageId   string
-	Score     float32
+	Distance  float32
 }
 
 type Handler interface {
