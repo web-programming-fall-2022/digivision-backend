@@ -19,8 +19,8 @@ func (r *FirstImageRanker) Rank(productImages []search.ProductImage) []Product {
 		if _, ok := productRankById[productImage.ProductId]; !ok {
 			productRankById[productImage.ProductId] = len(result)
 			result = append(result, Product{
-				Id:       productImage.ProductId,
-				Distance: productImage.Distance,
+				Id:    productImage.ProductId,
+				Score: -productImage.Distance,
 			})
 		}
 	}

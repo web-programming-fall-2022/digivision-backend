@@ -53,7 +53,7 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 		if err != nil {
 			return nil, err
 		}
-		p.Score = product.Distance
+		p.Score = product.Score
 		return p, nil
 	}, products)
 	if err != nil {

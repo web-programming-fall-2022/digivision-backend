@@ -69,7 +69,7 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 	logrus.Infoln("searchHandler client created")
 
 	// Create the Ranker service
-	ranker := rank.NewFirstImageRanker()
+	ranker := rank.NewDistCountRanker()
 	logrus.Infoln("ranker created")
 
 	// Create the object detector service
