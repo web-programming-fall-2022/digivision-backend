@@ -26,7 +26,7 @@ To run locally after build:
 ```shell script
 protoc --proto_path=api/proto/v1 --proto_path=third_party --go_out=pkg/api/v1 --go-grpc_out=pkg/api/v1 --grpc-gateway_out=logtostderr=true:pkg/api/v1 --swagger_out=logtostderr=true:api/swagger/v1 search.proto
 protoc --proto_path=api/proto/img2vec --go_out=internal/api/img2vec --go-grpc_out=internal/api/img2vec img2vec.proto
-protoc --proto_path=api/proto/object_detector --go_out=internal/api/object_detector --go-grpc_out=internal/api/object_detector object_detector.proto
+protoc --proto_path=api/proto/od --go_out=internal/api/od --go-grpc_out=internal/api/od object_detector.proto
 ```
 
 ## Build docker image

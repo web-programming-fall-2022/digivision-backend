@@ -44,8 +44,9 @@ func (v *Variant) UnmarshalJSON(data []byte) error {
 type DigikalaProduct struct {
 	Data struct {
 		Product struct {
-			TitleFa string `json:"title_fa"`
-			Url     struct {
+			IsInactive bool   `json:"is_inactive"`
+			TitleFa    string `json:"title_fa"`
+			Url        struct {
 				Uri string `json:"uri"`
 			} `json:"url"`
 			Status string `json:"status"`
