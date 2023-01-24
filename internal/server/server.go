@@ -73,7 +73,7 @@ func (s *SearchServiceServer) AsyncSearch(req *pb.SearchRequest, stream pb.Searc
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to search: %v", err)
 	}
-	products := s.ranker.Rank(productImages)
+	products := s.ranker.Rank(productImages)[:req.TopK]
 	productIds := make([]string, len(products))
 	for i, product := range products {
 		productIds[i] = product.Id
