@@ -49,7 +49,7 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 	}
 	products := s.ranker.Rank(productImages)
 	fetchedProducts, err := utils.ConcurrentMap(func(product rank.Product) (*pb.Product, error) {
-		p, err := s.fetcher.Fetch(ctx, product.Id)
+		p, err := s.fetcher.Fetch(ctx, product)
 		if err != nil {
 			return nil, err
 		}
@@ -74,20 +74,19 @@ func (s *SearchServiceServer) AsyncSearch(req *pb.SearchRequest, stream pb.Searc
 		return status.Errorf(codes.Internal, "failed to search: %v", err)
 	}
 	products := s.ranker.Rank(productImages)
-	productIds := make([]string, len(products))
-	for i, product := range products {
-		productIds[i] = product.Id
-	}
-	productChan, errChan := s.fetcher.AsyncFetch(stream.Context(), productIds, int(req.TopK))
+	respChan := s.fetcher.AsyncFetch(stream.Context(), products, int(req.TopK))
 	for {
 		select {
 		case <-stream.Context().Done():
 			return status.Errorf(codes.Canceled, "client canceled the request")
-		case err := <-errChan:
-			return status.Errorf(codes.Internal, "failed to fetch products: %v", err)
-		case product := <-productChan:
-			if err := stream.Send(&pb.AsyncSearchResponse{Product: product}); err != nil {
-				return status.Errorf(codes.Internal, "failed to send product: %v", err)
+		case resp := <-respChan:
+			if resp == nil {
+				return nil
+			}
+			if resp.Product != nil {
+				if err := stream.Send(&pb.AsyncSearchResponse{Product: resp.Product}); err != nil {
+					return status.Errorf(codes.Internal, "failed to send product: %v", err)
+				}
 			}
 		}
 	}

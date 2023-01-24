@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/arimanius/digivision-backend/internal/rank"
 	v1 "github.com/arimanius/digivision-backend/pkg/api/v1"
 	"github.com/go-resty/resty/v2"
+	"github.com/pkg/errors"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -33,8 +36,8 @@ func NewDigikalaFetcher(
 	}
 }
 
-func (f DigikalaFetcher) Fetch(ctx context.Context, productId string) (*v1.Product, error) {
-	pid, err := strconv.Atoi(productId)
+func (f DigikalaFetcher) Fetch(ctx context.Context, product rank.Product) (*v1.Product, error) {
+	pid, err := strconv.Atoi(product.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -45,18 +48,21 @@ func (f DigikalaFetcher) Fetch(ctx context.Context, productId string) (*v1.Produ
 		return nil, err
 	}
 	if resp.Status() != "200 OK" {
-		return nil, fmt.Errorf("failed to fetch product %s. status: %s", productId, resp.Status())
+		return nil, fmt.Errorf("failed to fetch product %s. status: %s", product.Id, resp.Status())
 	}
-	product := DigikalaProduct{}
-	err = json.Unmarshal(resp.Body(), &product)
+	dkProduct := DigikalaProduct{}
+	err = json.Unmarshal(resp.Body(), &dkProduct)
 	if err != nil {
 		return nil, err
 	}
-	p := product.Data.Product
+	p := dkProduct.Data.Product
+	if p.IsInactive {
+		return nil, fmt.Errorf("product %s is inactive", product.Id)
+	}
 	return &v1.Product{
 		Id:       int32(pid),
 		Title:    p.TitleFa,
-		Url:      fmt.Sprintf("%s%s", f.baseUrl, p.Url),
+		Url:      fmt.Sprintf("%s%s", f.baseUrl, p.Url.Uri),
 		Status:   p.Status,
 		ImageUrl: p.Images.Main.Url[0],
 		Rate: &v1.Rating{
@@ -65,39 +71,97 @@ func (f DigikalaFetcher) Fetch(ctx context.Context, productId string) (*v1.Produ
 		},
 		Categories: ToCategories(f.baseUrl, p.Breadcrumb),
 		Price:      p.DefaultVariant.Price.SellingPrice,
+		Score:      product.Score,
 	}, nil
 }
 
-func (f DigikalaFetcher) AsyncFetch(ctx context.Context, productIds []string, count int) (chan *v1.Product, chan error) {
-	resp := make(chan *v1.Product)
-	err := make(chan error)
+type ProductWithError struct {
+	Product *v1.Product
+	Error   error
+}
 
+func (f DigikalaFetcher) AsyncFetch(ctx context.Context, products []rank.Product, count int) chan *ProductWithError {
+	resp := make(chan *ProductWithError)
+
+	responses := make([]chan *ProductWithError, len(products))
+	for i := range products {
+		responses[i] = make(chan *ProductWithError)
+	}
+	innerCtx, cancel := context.WithCancel(ctx)
 	go func() {
-		defer close(resp)
-		defer close(err)
-		var emp empty
-		c := 0
-		for _, productId := range productIds {
-			f.sem <- emp
-			p, e := f.Fetch(ctx, productId)
-			retryCount := 0
-			for e != nil {
-				err <- e
-				time.Sleep(1 * time.Second)
-				if retryCount >= f.maxRetry {
-					continue
-				}
-				p, e = f.Fetch(ctx, productId)
-				retryCount++
-			}
-			<-f.sem
-			resp <- p
-			c++
-			if c >= count {
-				break
+		for i, product := range products {
+			select {
+			case <-innerCtx.Done():
+				return
+			default:
+				f.singleAsyncFetch(innerCtx, product, responses[i])
 			}
 		}
 	}()
 
-	return resp, err
+	go func() {
+		defer close(resp)
+		defer cancel()
+		c := 0
+		i := 0
+		for {
+			if c >= count || i >= len(products) {
+				return
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case p := <-responses[i]:
+				if p == nil {
+					return
+				}
+				i++
+				resp <- p
+				if p.Product != nil {
+					c++
+				}
+			}
+		}
+	}()
+
+	return resp
+}
+
+func (f DigikalaFetcher) singleAsyncFetch(ctx context.Context, product rank.Product, resp chan *ProductWithError) {
+	var emp empty
+	f.sem <- emp
+	go func() {
+		defer func() {
+			<-f.sem
+			close(resp)
+		}()
+		p, e := f.Fetch(ctx, product)
+		retryCount := 0
+		for e != nil {
+			if strings.HasSuffix(e.Error(), "is inactive") {
+				resp <- &ProductWithError{
+					Product: nil,
+					Error:   errors.Wrapf(e, "failed to fetch product %s", product.Id),
+				}
+				return
+			}
+			if strings.HasSuffix(e.Error(), "context canceled") {
+				return
+			}
+			time.Sleep(1 * time.Second)
+			if retryCount >= f.maxRetry {
+				resp <- &ProductWithError{
+					Product: nil,
+					Error:   errors.Wrapf(e, "failed to fetch product %s after %d retries", product.Id, retryCount),
+				}
+				return
+			}
+			p, e = f.Fetch(ctx, product)
+			retryCount++
+		}
+		resp <- &ProductWithError{
+			Product: p,
+			Error:   nil,
+		}
+	}()
 }
