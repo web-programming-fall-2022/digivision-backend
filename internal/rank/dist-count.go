@@ -17,7 +17,7 @@ func (r *DistCountRanker) Rank(productImages []search.ProductImage) []Product {
 	productScore := make(map[string]float64)
 	for i, productImage := range productImages {
 		// make decay factor float64
-		decayFactor := 1.0 / (1.0 + float64(i))
+		decayFactor := math.Exp(-0.005 * float64(i))
 		score := math.Exp(float64(-0.002*productImage.Distance)) * decayFactor
 		p, ok := productScore[productImage.ProductId]
 		if !ok {
