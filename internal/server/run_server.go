@@ -19,6 +19,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/sirupsen/logrus"
+	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -96,6 +97,8 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 		"https://www.digikala.com",
 		"https://api.digikala.com/v1/product/",
 		httpClient,
+		3,
+		5,
 	)
 
 	registerServer(grpcServer, i2v, searchHandler, fetcher, ranker, objectDetector)
@@ -122,7 +125,7 @@ func RunHttpServer(ctx context.Context, config cfg.Config) job.WithGracefulShutd
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", config.HttpServer.Port),
-		Handler: mux,
+		Handler: wsproxy.WebsocketProxy(mux),
 	}
 
 	logrus.Info("Starting HTTP/REST Gateway...", srv.Addr)

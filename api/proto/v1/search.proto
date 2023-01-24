@@ -37,6 +37,10 @@ message SearchResponse {
   repeated Product products = 1;
 }
 
+message AsyncSearchResponse {
+  Product product = 1;
+}
+
 message CropRequest {
   bytes image = 1;
 }
@@ -80,6 +84,12 @@ service SearchService {
   rpc Search(SearchRequest) returns (SearchResponse) {
     option (google.api.http) = {
       post: "/api/v1/search"
+      body: "*"
+    };
+  }
+  rpc AsyncSearch(SearchRequest) returns (stream AsyncSearchResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/search-async"
       body: "*"
     };
   }

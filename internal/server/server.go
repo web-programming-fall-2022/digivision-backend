@@ -64,6 +64,35 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 	}, nil
 }
 
+func (s *SearchServiceServer) AsyncSearch(req *pb.SearchRequest, stream pb.SearchService_AsyncSearchServer) error {
+	vector, err := s.img2vec.Vectorize(stream.Context(), req.Image)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to vectorize the image: %v", err)
+	}
+	productImages, err := s.searchHandler.Search(stream.Context(), vector, int(req.TopK))
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to search: %v", err)
+	}
+	products := s.ranker.Rank(productImages)
+	productIds := make([]string, len(products))
+	for i, product := range products {
+		productIds[i] = product.Id
+	}
+	productChan, errChan := s.fetcher.AsyncFetch(stream.Context(), productIds)
+	for {
+		select {
+		case <-stream.Context().Done():
+			return status.Errorf(codes.Canceled, "client canceled the request")
+		case err := <-errChan:
+			return status.Errorf(codes.Internal, "failed to fetch products: %v", err)
+		case product := <-productChan:
+			if err := stream.Send(&pb.AsyncSearchResponse{Product: product}); err != nil {
+				return status.Errorf(codes.Internal, "failed to send product: %v", err)
+			}
+		}
+	}
+}
+
 func (s *SearchServiceServer) Crop(ctx context.Context, req *pb.CropRequest) (*pb.CropResponse, error) {
 	topLeft, bottomRight, err := s.objectDetector.Detect(ctx, req.Image)
 	if err != nil {

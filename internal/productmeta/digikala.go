@@ -7,19 +7,29 @@ import (
 	v1 "github.com/arimanius/digivision-backend/pkg/api/v1"
 	"github.com/go-resty/resty/v2"
 	"strconv"
+	"time"
 )
+
+type empty interface{}
+type semaphore chan empty
 
 type DigikalaFetcher struct {
 	baseUrl    string
 	apiBaseUrl string
 	client     *resty.Client
+	maxRetry   int
+	sem        semaphore
 }
 
-func NewDigikalaFetcher(baseUrl string, apiBaseUrl string, client *resty.Client) DigikalaFetcher {
+func NewDigikalaFetcher(
+	baseUrl string, apiBaseUrl string, client *resty.Client, maxRetry int, concurrencyFactor int,
+) DigikalaFetcher {
 	return DigikalaFetcher{
 		baseUrl:    baseUrl,
 		apiBaseUrl: apiBaseUrl,
 		client:     client,
+		maxRetry:   maxRetry,
+		sem:        make(semaphore, concurrencyFactor),
 	}
 }
 
@@ -56,4 +66,33 @@ func (f DigikalaFetcher) Fetch(ctx context.Context, productId string) (*v1.Produ
 		Categories: ToCategories(f.baseUrl, p.Breadcrumb),
 		Price:      p.DefaultVariant.Price.SellingPrice,
 	}, nil
+}
+
+func (f DigikalaFetcher) AsyncFetch(ctx context.Context, productIds []string) (chan *v1.Product, chan error) {
+	resp := make(chan *v1.Product)
+	err := make(chan error)
+
+	go func() {
+		defer close(resp)
+		defer close(err)
+		var emp empty
+		for _, productId := range productIds {
+			f.sem <- emp
+			p, e := f.Fetch(ctx, productId)
+			retryCount := 0
+			for e != nil {
+				err <- e
+				time.Sleep(1 * time.Second)
+				if retryCount >= f.maxRetry {
+					break
+				}
+				p, e = f.Fetch(ctx, productId)
+				retryCount++
+			}
+			resp <- p
+			<-f.sem
+		}
+	}()
+
+	return resp, err
 }

@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SearchServiceClient interface {
 	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
+	AsyncSearch(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (SearchService_AsyncSearchClient, error)
 	Crop(ctx context.Context, in *CropRequest, opts ...grpc.CallOption) (*CropResponse, error)
 }
 
@@ -43,6 +44,38 @@ func (c *searchServiceClient) Search(ctx context.Context, in *SearchRequest, opt
 	return out, nil
 }
 
+func (c *searchServiceClient) AsyncSearch(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (SearchService_AsyncSearchClient, error) {
+	stream, err := c.cc.NewStream(ctx, &SearchService_ServiceDesc.Streams[0], "/v1.SearchService/AsyncSearch", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &searchServiceAsyncSearchClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type SearchService_AsyncSearchClient interface {
+	Recv() (*AsyncSearchResponse, error)
+	grpc.ClientStream
+}
+
+type searchServiceAsyncSearchClient struct {
+	grpc.ClientStream
+}
+
+func (x *searchServiceAsyncSearchClient) Recv() (*AsyncSearchResponse, error) {
+	m := new(AsyncSearchResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *searchServiceClient) Crop(ctx context.Context, in *CropRequest, opts ...grpc.CallOption) (*CropResponse, error) {
 	out := new(CropResponse)
 	err := c.cc.Invoke(ctx, "/v1.SearchService/Crop", in, out, opts...)
@@ -57,6 +90,7 @@ func (c *searchServiceClient) Crop(ctx context.Context, in *CropRequest, opts ..
 // for forward compatibility
 type SearchServiceServer interface {
 	Search(context.Context, *SearchRequest) (*SearchResponse, error)
+	AsyncSearch(*SearchRequest, SearchService_AsyncSearchServer) error
 	Crop(context.Context, *CropRequest) (*CropResponse, error)
 	mustEmbedUnimplementedSearchServiceServer()
 }
@@ -67,6 +101,9 @@ type UnimplementedSearchServiceServer struct {
 
 func (UnimplementedSearchServiceServer) Search(context.Context, *SearchRequest) (*SearchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Search not implemented")
+}
+func (UnimplementedSearchServiceServer) AsyncSearch(*SearchRequest, SearchService_AsyncSearchServer) error {
+	return status.Errorf(codes.Unimplemented, "method AsyncSearch not implemented")
 }
 func (UnimplementedSearchServiceServer) Crop(context.Context, *CropRequest) (*CropResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Crop not implemented")
@@ -100,6 +137,27 @@ func _SearchService_Search_Handler(srv interface{}, ctx context.Context, dec fun
 		return srv.(SearchServiceServer).Search(ctx, req.(*SearchRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _SearchService_AsyncSearch_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SearchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SearchServiceServer).AsyncSearch(m, &searchServiceAsyncSearchServer{stream})
+}
+
+type SearchService_AsyncSearchServer interface {
+	Send(*AsyncSearchResponse) error
+	grpc.ServerStream
+}
+
+type searchServiceAsyncSearchServer struct {
+	grpc.ServerStream
+}
+
+func (x *searchServiceAsyncSearchServer) Send(m *AsyncSearchResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _SearchService_Crop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -136,6 +194,12 @@ var SearchService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SearchService_Crop_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "AsyncSearch",
+			Handler:       _SearchService_AsyncSearch_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "search.proto",
 }
