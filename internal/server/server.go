@@ -73,12 +73,12 @@ func (s *SearchServiceServer) AsyncSearch(req *pb.SearchRequest, stream pb.Searc
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to search: %v", err)
 	}
-	products := s.ranker.Rank(productImages)[:req.TopK]
+	products := s.ranker.Rank(productImages)
 	productIds := make([]string, len(products))
 	for i, product := range products {
 		productIds[i] = product.Id
 	}
-	productChan, errChan := s.fetcher.AsyncFetch(stream.Context(), productIds)
+	productChan, errChan := s.fetcher.AsyncFetch(stream.Context(), productIds, int(req.TopK))
 	for {
 		select {
 		case <-stream.Context().Done():

@@ -68,7 +68,7 @@ func (f DigikalaFetcher) Fetch(ctx context.Context, productId string) (*v1.Produ
 	}, nil
 }
 
-func (f DigikalaFetcher) AsyncFetch(ctx context.Context, productIds []string) (chan *v1.Product, chan error) {
+func (f DigikalaFetcher) AsyncFetch(ctx context.Context, productIds []string, count int) (chan *v1.Product, chan error) {
 	resp := make(chan *v1.Product)
 	err := make(chan error)
 
@@ -76,6 +76,7 @@ func (f DigikalaFetcher) AsyncFetch(ctx context.Context, productIds []string) (c
 		defer close(resp)
 		defer close(err)
 		var emp empty
+		c := 0
 		for _, productId := range productIds {
 			f.sem <- emp
 			p, e := f.Fetch(ctx, productId)
@@ -89,8 +90,12 @@ func (f DigikalaFetcher) AsyncFetch(ctx context.Context, productIds []string) (c
 				p, e = f.Fetch(ctx, productId)
 				retryCount++
 			}
-			resp <- p
 			<-f.sem
+			resp <- p
+			c++
+			if c >= count {
+				break
+			}
 		}
 	}()
 

@@ -7,5 +7,5 @@ import (
 
 type Fetcher interface {
 	Fetch(ctx context.Context, productId string) (*v1.Product, error)
-	AsyncFetch(ctx context.Context, productIds []string) (chan *v1.Product, chan error)
+	AsyncFetch(ctx context.Context, productIds []string, count int) (chan *v1.Product, chan error)
 }
