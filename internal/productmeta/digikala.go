@@ -85,7 +85,7 @@ func (f DigikalaFetcher) AsyncFetch(ctx context.Context, productIds []string, co
 				err <- e
 				time.Sleep(1 * time.Second)
 				if retryCount >= f.maxRetry {
-					break
+					continue
 				}
 				p, e = f.Fetch(ctx, productId)
 				retryCount++
