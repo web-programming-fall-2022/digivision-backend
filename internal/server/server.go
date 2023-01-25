@@ -7,7 +7,6 @@ import (
 	"github.com/arimanius/digivision-backend/internal/productmeta"
 	"github.com/arimanius/digivision-backend/internal/rank"
 	"github.com/arimanius/digivision-backend/internal/search"
-	"github.com/arimanius/digivision-backend/internal/utils"
 	pb "github.com/arimanius/digivision-backend/pkg/api/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -48,20 +47,21 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 		return nil, status.Errorf(codes.Internal, "failed to search: %v", err)
 	}
 	products := s.ranker.Rank(productImages)
-	fetchedProducts, err := utils.ConcurrentMap(func(product rank.Product) (*pb.Product, error) {
-		p, err := s.fetcher.Fetch(ctx, product)
-		if err != nil {
-			return nil, err
+	respChan := s.fetcher.AsyncFetch(ctx, products, int(req.TopK))
+	var resultProducts []*pb.Product
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, status.Errorf(codes.Canceled, "client canceled the request")
+		case resp := <-respChan:
+			if resp == nil {
+				return &pb.SearchResponse{Products: resultProducts}, nil
+			}
+			if resp.Product != nil {
+				resultProducts = append(resultProducts, resp.Product)
+			}
 		}
-		p.Score = product.Score
-		return p, nil
-	}, products[:req.TopK])
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to fetch products: %v", err)
 	}
-	return &pb.SearchResponse{
-		Products: fetchedProducts,
-	}, nil
 }
 
 func (s *SearchServiceServer) AsyncSearch(req *pb.SearchRequest, stream pb.SearchService_AsyncSearchServer) error {
