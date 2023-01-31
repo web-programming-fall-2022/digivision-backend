@@ -6,9 +6,19 @@ package v1;
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
+enum Ranker {
+  FIRST_IMAGE = 0;
+  DIST_COUNT = 1;
+}
+
+message SearchParams {
+  int32 top_k = 1;
+  Ranker ranker = 2;
+}
+
 message SearchRequest {
   bytes image = 1;
-  int32 top_k = 2;
+  SearchParams params = 2;
 }
 
 message Rating {

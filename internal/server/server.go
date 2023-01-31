@@ -16,7 +16,7 @@ type SearchServiceServer struct {
 	pb.UnimplementedSearchServiceServer
 	img2vec        img2vec.Img2Vec
 	searchHandler  search.Handler
-	ranker         rank.Ranker
+	rankers        map[pb.Ranker]rank.Ranker
 	objectDetector od.ObjectDetector
 	fetcher        productmeta.Fetcher
 }
@@ -25,14 +25,14 @@ func NewSearchServiceServer(
 	i2v img2vec.Img2Vec,
 	searchHandler search.Handler,
 	fetcher productmeta.Fetcher,
-	ranker rank.Ranker,
+	rankers map[pb.Ranker]rank.Ranker,
 	objectDetector od.ObjectDetector,
 ) *SearchServiceServer {
 	return &SearchServiceServer{
 		img2vec:        i2v,
 		searchHandler:  searchHandler,
 		fetcher:        fetcher,
-		ranker:         ranker,
+		rankers:        rankers,
 		objectDetector: objectDetector,
 	}
 }
@@ -42,12 +42,12 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to vectorize the image: %v", err)
 	}
-	productImages, err := s.searchHandler.Search(ctx, vector, int(req.TopK))
+	productImages, err := s.searchHandler.Search(ctx, vector, int(req.Params.TopK))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to search: %v", err)
 	}
-	products := s.ranker.Rank(productImages)
-	respChan := s.fetcher.AsyncFetch(ctx, products, int(req.TopK))
+	products := s.rankers[req.Params.Ranker].Rank(productImages)
+	respChan := s.fetcher.AsyncFetch(ctx, products, int(req.Params.TopK))
 	var resultProducts []*pb.Product
 	for {
 		select {
@@ -69,12 +69,12 @@ func (s *SearchServiceServer) AsyncSearch(req *pb.SearchRequest, stream pb.Searc
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to vectorize the image: %v", err)
 	}
-	productImages, err := s.searchHandler.Search(stream.Context(), vector, int(req.TopK))
+	productImages, err := s.searchHandler.Search(stream.Context(), vector, int(req.Params.TopK))
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to search: %v", err)
 	}
-	products := s.ranker.Rank(productImages)
-	respChan := s.fetcher.AsyncFetch(stream.Context(), products, int(req.TopK))
+	products := s.rankers[req.Params.Ranker].Rank(productImages)
+	respChan := s.fetcher.AsyncFetch(stream.Context(), products, int(req.Params.TopK))
 	for {
 		select {
 		case <-stream.Context().Done():

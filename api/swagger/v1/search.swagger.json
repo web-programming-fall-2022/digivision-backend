@@ -293,6 +293,14 @@
         }
       }
     },
+    "v1Ranker": {
+      "type": "string",
+      "enum": [
+        "FIRST_IMAGE",
+        "DIST_COUNT"
+      ],
+      "default": "FIRST_IMAGE"
+    },
     "v1Rating": {
       "type": "object",
       "properties": {
@@ -306,6 +314,18 @@
         }
       }
     },
+    "v1SearchParams": {
+      "type": "object",
+      "properties": {
+        "top_k": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "ranker": {
+          "$ref": "#/definitions/v1Ranker"
+        }
+      }
+    },
     "v1SearchRequest": {
       "type": "object",
       "properties": {
@@ -313,9 +333,8 @@
           "type": "string",
           "format": "byte"
         },
-        "top_k": {
-          "type": "integer",
-          "format": "int32"
+        "params": {
+          "$ref": "#/definitions/v1SearchParams"
         }
       }
     },

@@ -70,7 +70,12 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 	logrus.Infoln("searchHandler client created")
 
 	// Create the Ranker service
-	ranker := rank.NewDistCountRanker()
+	firstImageRanker := rank.NewFirstImageRanker()
+	distCountRanker := rank.NewDistCountRanker()
+	rankers := map[pb.Ranker]rank.Ranker{
+		pb.Ranker_FIRST_IMAGE: firstImageRanker,
+		pb.Ranker_DIST_COUNT:  distCountRanker,
+	}
 	logrus.Infoln("ranker created")
 
 	// Create the object detector service
@@ -101,7 +106,7 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 		5,
 	)
 
-	registerServer(grpcServer, i2v, searchHandler, fetcher, ranker, objectDetector)
+	registerServer(grpcServer, i2v, searchHandler, fetcher, rankers, objectDetector)
 
 	go func() {
 		logrus.Infoln("Starting grpc server...")
@@ -112,8 +117,15 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 	return serverRunner
 }
 
-func registerServer(server *grpc.Server, i2v img2vec.Img2Vec, searchHandler search.Handler, fetcher productmeta.Fetcher, ranker rank.Ranker, objectDetector od.ObjectDetector) {
-	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(i2v, searchHandler, fetcher, ranker, objectDetector))
+func registerServer(
+	server *grpc.Server,
+	i2v img2vec.Img2Vec,
+	searchHandler search.Handler,
+	fetcher productmeta.Fetcher,
+	rankers map[pb.Ranker]rank.Ranker,
+	objectDetector od.ObjectDetector,
+) {
+	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(i2v, searchHandler, fetcher, rankers, objectDetector))
 }
 
 func RunHttpServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown {
