@@ -18,6 +18,7 @@ import (
 	grpcRetry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
+	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
@@ -97,11 +98,18 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 	objectDetector := od.NewGrpcObjectDetector(odClient)
 	logrus.Infoln("od client created")
 
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     config.Redis.Addr,
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
 	httpClient := resty.New()
 	fetcher := productmeta.NewDigikalaFetcher(
 		"https://www.digikala.com",
 		"https://api.digikala.com/v1/product/",
 		httpClient,
+		rdb,
 		3,
 		5,
 	)

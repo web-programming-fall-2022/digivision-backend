@@ -8,6 +8,7 @@ import (
 	v1 "github.com/arimanius/digivision-backend/pkg/api/v1"
 	"github.com/go-resty/resty/v2"
 	"github.com/pkg/errors"
+	"github.com/redis/go-redis/v9"
 	"strconv"
 	"strings"
 	"time"
@@ -17,22 +18,24 @@ type empty interface{}
 type semaphore chan empty
 
 type DigikalaFetcher struct {
-	baseUrl    string
-	apiBaseUrl string
-	client     *resty.Client
-	maxRetry   int
-	sem        semaphore
+	baseUrl     string
+	apiBaseUrl  string
+	client      *resty.Client
+	redisClient *redis.Client
+	maxRetry    int
+	sem         semaphore
 }
 
 func NewDigikalaFetcher(
-	baseUrl string, apiBaseUrl string, client *resty.Client, maxRetry int, concurrencyFactor int,
+	baseUrl string, apiBaseUrl string, client *resty.Client, redisClient *redis.Client, maxRetry int, concurrencyFactor int,
 ) DigikalaFetcher {
 	return DigikalaFetcher{
-		baseUrl:    baseUrl,
-		apiBaseUrl: apiBaseUrl,
-		client:     client,
-		maxRetry:   maxRetry,
-		sem:        make(semaphore, concurrencyFactor),
+		baseUrl:     baseUrl,
+		apiBaseUrl:  apiBaseUrl,
+		client:      client,
+		redisClient: redisClient,
+		maxRetry:    maxRetry,
+		sem:         make(semaphore, concurrencyFactor),
 	}
 }
 
@@ -42,16 +45,29 @@ func (f DigikalaFetcher) Fetch(ctx context.Context, product rank.Product) (*v1.P
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s/%d/", f.apiBaseUrl, pid)
-	resp, err := f.client.R().SetContext(ctx).Get(url)
-	if err != nil {
-		return nil, err
-	}
-	if resp.Status() != "200 OK" {
-		return nil, fmt.Errorf("failed to fetch product %s. status: %s", product.Id, resp.Status())
-	}
+	cache, err := f.redisClient.Get(ctx, fmt.Sprintf("product:%d", pid)).Result()
 	dkProduct := DigikalaProduct{}
-	err = json.Unmarshal(resp.Body(), &dkProduct)
+	if err == redis.Nil {
+		url := fmt.Sprintf("%s/%d/", f.apiBaseUrl, pid)
+		resp, err := f.client.R().SetContext(ctx).Get(url)
+		if err != nil {
+			return nil, err
+		}
+		if resp.Status() != "200 OK" {
+			return nil, fmt.Errorf("failed to fetch product %s. status: %s", product.Id, resp.Status())
+		}
+		body := resp.Body()
+		err = f.redisClient.Set(ctx, fmt.Sprintf("product:%d", pid), string(body), 0).Err()
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(body, &dkProduct)
+	} else if err != nil {
+		return nil, err
+	} else {
+		err = json.Unmarshal([]byte(cache), &dkProduct)
+	}
+
 	if err != nil {
 		return nil, err
 	}

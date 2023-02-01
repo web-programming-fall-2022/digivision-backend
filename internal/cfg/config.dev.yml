@@ -27,3 +27,6 @@ milvus:
 
 objectDetector:
   addr: localhost:50052
+
+redis:
+  addr: localhost:6379

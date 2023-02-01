@@ -33,6 +33,10 @@ type Config struct {
 	ObjectDetector struct {
 		Addr string
 	}
+
+	Redis struct {
+		Addr string
+	}
 }
 
 func (c *Config) Validate() error {
