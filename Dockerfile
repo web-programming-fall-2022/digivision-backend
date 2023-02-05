@@ -14,7 +14,9 @@ RUN make build
 RUN chmod +x dvs
 
 
-FROM scratch
+FROM alpine:3.14.2
+
+RUN apk update && apk add bash
 
 COPY --from=builder /app/dvs /app/dvs
 COPY --from=builder /bin/grpc_health_probe /bin/grpc_health_probe
