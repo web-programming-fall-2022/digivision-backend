@@ -39,6 +39,7 @@ func NewSearchServiceServer(
 		fetcher:        fetcher,
 		rankers:        rankers,
 		objectDetector: objectDetector,
+		logSearchImage: logSearchImage,
 	}
 }
 
