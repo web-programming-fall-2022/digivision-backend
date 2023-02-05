@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package v1;
+
+
+enum Ranker {
+  FIRST_IMAGE = 0;
+  DIST_COUNT = 1;
+}
+
+message SearchParams {
+  int32 top_k = 1;
+  Ranker ranker = 2;
+}
+
+message SearchRequest {
+  bytes image = 1;
+  SearchParams params = 2;
+}
+
+message Rating {
+  int32 rate = 1;
+  int32 count = 2;
+}
+
+message Category {
+  string title = 1;
+  string url = 2;
+}
+
+message Product {
+  int32 id = 1;
+  float score = 2;
+  string title = 3;
+  string url = 4;
+  string status = 5;
+  string image_url = 6;
+  Rating rate = 7;
+  repeated Category categories = 8;
+  int64 price = 9;
+}
+
+message SearchResponse {
+  repeated Product products = 1;
+}
+
+message AsyncSearchResponse {
+  Product product = 1;
+}
+
+message CropRequest {
+  bytes image = 1;
+}
+
+message Position {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+message CropResponse {
+  Position top_left = 1;
+  Position bottom_right = 2;
+}
+
+service SearchService {
+  rpc Search(SearchRequest) returns (SearchResponse) {}
+  rpc AsyncSearch(SearchRequest) returns (stream AsyncSearchResponse) {}
+  rpc Crop(CropRequest) returns (CropResponse) {}
+}

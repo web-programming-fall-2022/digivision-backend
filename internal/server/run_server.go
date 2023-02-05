@@ -18,7 +18,6 @@ import (
 	grpcRetry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
-	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
@@ -114,7 +113,7 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 		5,
 	)
 
-	registerServer(grpcServer, i2v, searchHandler, fetcher, rankers, objectDetector)
+	registerServer(grpcServer, i2v, searchHandler, fetcher, rankers, objectDetector, config.Env != "production")
 
 	go func() {
 		logrus.Infoln("Starting grpc server...")
@@ -132,8 +131,9 @@ func registerServer(
 	fetcher productmeta.Fetcher,
 	rankers map[pb.Ranker]rank.Ranker,
 	objectDetector od.ObjectDetector,
+	logSearchImage bool,
 ) {
-	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(i2v, searchHandler, fetcher, rankers, objectDetector))
+	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(i2v, searchHandler, fetcher, rankers, objectDetector, logSearchImage))
 }
 
 func RunHttpServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown {
