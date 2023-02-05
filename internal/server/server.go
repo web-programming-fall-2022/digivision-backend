@@ -121,5 +121,5 @@ func (s *SearchServiceServer) saveImageToFile(image []byte) error {
 		return nil
 	}
 	time := time.Now().Format("2006-01-02_15-04-05")
-	return os.WriteFile(fmt.Sprintf("./%s.png", time), image, 0644)
+	return os.WriteFile(fmt.Sprintf("./data/%s.png", time), image, 0644)
 }
