@@ -9,6 +9,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 	"time"
@@ -48,22 +49,10 @@ func (f DigikalaFetcher) Fetch(ctx context.Context, product rank.Product) (*v1.P
 	cache, err := f.redisClient.Get(ctx, fmt.Sprintf("product:%d", pid)).Result()
 	dkProduct := DigikalaProduct{}
 	if err == redis.Nil {
-		url := fmt.Sprintf("%s/%d/", f.apiBaseUrl, pid)
-		resp, err := f.client.R().SetContext(ctx).Get(url)
-		if err != nil {
-			return nil, err
-		}
-		if resp.Status() != "200 OK" {
-			return nil, fmt.Errorf("failed to fetch product %s. status: %s", product.Id, resp.Status())
-		}
-		body := resp.Body()
-		err = f.redisClient.Set(ctx, fmt.Sprintf("product:%d", pid), string(body), 0).Err()
-		if err != nil {
-			return nil, err
-		}
-		err = json.Unmarshal(body, &dkProduct)
+		err = f.fetchFromDigikala(ctx, product, &dkProduct)
 	} else if err != nil {
-		return nil, err
+		logrus.Error("failed to fetch product from redis ", pid, " err: ", err)
+		err = f.fetchFromDigikala(ctx, product, &dkProduct)
 	} else {
 		err = json.Unmarshal([]byte(cache), &dkProduct)
 	}
@@ -89,6 +78,28 @@ func (f DigikalaFetcher) Fetch(ctx context.Context, product rank.Product) (*v1.P
 		Price:      p.DefaultVariant.Price.SellingPrice,
 		Score:      product.Score,
 	}, nil
+}
+
+func (f DigikalaFetcher) fetchFromDigikala(ctx context.Context, product rank.Product, dkProduct *DigikalaProduct) error {
+	pid, err := strconv.Atoi(product.Id)
+	if err != nil {
+		return err
+	}
+	url := fmt.Sprintf("%s/%d/", f.apiBaseUrl, pid)
+	resp, err := f.client.R().SetContext(ctx).Get(url)
+	if err != nil {
+		return err
+	}
+	if resp.Status() != "200 OK" {
+		return fmt.Errorf("failed to fetch product %s. status: %s", product.Id, resp.Status())
+	}
+	body := resp.Body()
+	err = f.redisClient.Set(ctx, fmt.Sprintf("product:%d", pid), string(body), 0).Err()
+	if err != nil {
+		logrus.Errorf("failed to set product %d to redis. err: %s", pid, err)
+	}
+	err = json.Unmarshal(body, &dkProduct)
+	return nil
 }
 
 type ProductWithError struct {
@@ -162,6 +173,10 @@ func (f DigikalaFetcher) singleAsyncFetch(ctx context.Context, product rank.Prod
 				return
 			}
 			if strings.HasSuffix(e.Error(), "context canceled") {
+				resp <- &ProductWithError{
+					Product: nil,
+					Error:   errors.Wrapf(e, "failed to fetch product %s", product.Id),
+				}
 				return
 			}
 			time.Sleep(1 * time.Second)
