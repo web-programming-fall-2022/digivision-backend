@@ -57,7 +57,7 @@ deploy-dev: .env
 	@exit 1
 
 ## Project Vars ##########################################################
-ROOT := github.com/arimanius/digivision-backend
+ROOT := github.com/web-programming-fall-2022/digivision-backend
 DOCKER_IMAGE := ghcr.io/arimanius/digivision-backend
 .PHONY: help clean update-dependencies test docker
 

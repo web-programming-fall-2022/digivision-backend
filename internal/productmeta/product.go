@@ -3,8 +3,8 @@ package productmeta
 import (
 	"encoding/json"
 	"fmt"
-	v1 "github.com/arimanius/digivision-backend/pkg/api/v1"
 	"github.com/pkg/errors"
+	v1 "github.com/web-programming-fall-2022/digivision-backend/pkg/api/v1"
 )
 
 type Breadcrumb struct {

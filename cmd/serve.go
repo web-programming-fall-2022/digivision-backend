@@ -7,12 +7,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/arimanius/digivision-backend/internal/bootstrap"
-	"github.com/arimanius/digivision-backend/internal/bootstrap/job"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/bootstrap"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/bootstrap/job"
 
-	"github.com/arimanius/digivision-backend/internal/cfg"
-	"github.com/arimanius/digivision-backend/internal/jobs"
-	"github.com/arimanius/digivision-backend/internal/server"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/cfg"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/jobs"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/server"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

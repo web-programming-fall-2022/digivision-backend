@@ -2,7 +2,7 @@ package img2vec
 
 import (
 	"context"
-	"github.com/arimanius/digivision-backend/internal/api/img2vec"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/api/img2vec"
 )
 
 // GrpcImg2Vec implements Img2Vec interface{}

@@ -1,6 +1,6 @@
 package rank
 
-import "github.com/arimanius/digivision-backend/internal/search"
+import "github.com/web-programming-fall-2022/digivision-backend/internal/search"
 
 type Product struct {
 	Id    string

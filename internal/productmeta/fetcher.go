@@ -2,8 +2,8 @@ package productmeta
 
 import (
 	"context"
-	"github.com/arimanius/digivision-backend/internal/rank"
-	v1 "github.com/arimanius/digivision-backend/pkg/api/v1"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/rank"
+	v1 "github.com/web-programming-fall-2022/digivision-backend/pkg/api/v1"
 )
 
 type Fetcher interface {

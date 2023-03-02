@@ -71,7 +71,7 @@ option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
     version: "1.0";
   };
   external_docs: {
-    url: "https://github.com/arimanius/digivision-backend";
+    url: "https://github.com/web-programming-fall-2022/digivision-backend";
     description: "Reverse Image Search on Digikala gRPC service with REST/HTTP gateway";
   }
   schemes: HTTPS;

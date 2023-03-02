@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/arimanius/digivision-backend/cmd"
+	"github.com/web-programming-fall-2022/digivision-backend/cmd"
 )
 
 func main() {

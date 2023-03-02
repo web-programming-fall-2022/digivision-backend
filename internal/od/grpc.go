@@ -2,7 +2,7 @@ package od
 
 import (
 	"context"
-	"github.com/arimanius/digivision-backend/internal/api/od"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/api/od"
 )
 
 // GrpcObjectDetector implements ObjectDetector interface{}

@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+option go_package = "./;v1";
+package v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+import "google/protobuf/empty.proto";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+
+message LoginRequest {
+    string email = 1;
+    string password = 2;
+}
+
+message LoginResponse {
+    string auth_token = 1;
+    string refresh_token = 2;
+}
+
+message RefreshTokenRequest {
+    string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+    string auth_token = 1;
+    string refresh_token = 2;
+}
+
+message LogoutRequest {
+    string auth_token = 1;
+    string refresh_token = 2;
+}
+
+message RegisterRequest {
+  string email = 1 [(validator.field) = {regex: "^[A-Za-z0-9+_.-]+@(.+)$"}];
+  string phone_number = 2 [(validator.field) = {regex: "^[0-9]{11}$"}];
+  string gender = 3 [(validator.field) = {regex: "^(M|F)$"}];
+  string first_name = 4;
+  string last_name = 5;
+  string password = 6 [(validator.field) = {length_gt: 7, length_lt: 65}];
+}
+
+message RegisterResponse {
+  string auth_token = 1;
+  string refresh_token = 2;
+}
+
+message UserInfoRequest {
+  string auth_token = 1;
+}
+
+message UserInfoResponse {
+  string email = 1;
+  string phone_number = 2;
+  string gender = 3;
+  string first_name = 4;
+  string last_name = 5;
+}
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+  info: {
+    title: "Airline Auth API";
+    version: "1.0";
+  };
+  external_docs: {
+    url: "https://github.com/web-programming-fall-2022/digivision-backend";
+    description: "Authentication system for airline project";
+  }
+  schemes: HTTPS;
+  consumes: "application/json";
+  produces: "application/json";
+  responses: {
+    key: "404";
+    value: {
+      description: "Returned when the resource does not exist.";
+      schema: {
+        json_schema: {
+          type: STRING;
+        }
+      }
+    }
+  }
+};
+
+service AuthService {
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login"
+      body: "*"
+    };
+  }
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/refresh"
+      body: "*"
+    };
+  }
+  rpc Logout(LogoutRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/logout"
+      body: "*"
+    };
+  }
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/register"
+      body: "*"
+    };
+  }
+  rpc UserInfo(UserInfoRequest) returns (UserInfoResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/userinfo"
+      body: "*"
+    };
+  }
+}

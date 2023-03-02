@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/arimanius/digivision-backend/internal/bootstrap/job"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/bootstrap/job"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"

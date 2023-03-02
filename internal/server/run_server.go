@@ -3,17 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	img2vecPb "github.com/arimanius/digivision-backend/internal/api/img2vec"
-	odPb "github.com/arimanius/digivision-backend/internal/api/od"
-	"github.com/arimanius/digivision-backend/internal/bootstrap"
-	"github.com/arimanius/digivision-backend/internal/bootstrap/job"
-	"github.com/arimanius/digivision-backend/internal/cfg"
-	"github.com/arimanius/digivision-backend/internal/img2vec"
-	"github.com/arimanius/digivision-backend/internal/od"
-	"github.com/arimanius/digivision-backend/internal/productmeta"
-	"github.com/arimanius/digivision-backend/internal/rank"
-	"github.com/arimanius/digivision-backend/internal/search"
-	pb "github.com/arimanius/digivision-backend/pkg/api/v1"
 	"github.com/go-resty/resty/v2"
 	grpcRetry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -21,9 +10,23 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
+	img2vecPb "github.com/web-programming-fall-2022/digivision-backend/internal/api/img2vec"
+	odPb "github.com/web-programming-fall-2022/digivision-backend/internal/api/od"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/bootstrap"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/bootstrap/job"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/cfg"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/img2vec"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/od"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/productmeta"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/rank"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/search"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/storage"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/token"
+	pb "github.com/web-programming-fall-2022/digivision-backend/pkg/api/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"log"
 	"math"
 	"net/http"
 	"time"
@@ -114,7 +117,21 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 		5,
 	)
 
-	registerServer(grpcServer, i2v, searchHandler, fetcher, rankers, objectDetector, config.Env != "production")
+	registerSearchServer(grpcServer, i2v, searchHandler, fetcher, rankers, objectDetector, config.Env != "production")
+
+	store := storage.NewStorage(&config.MainDB)
+
+	if err := store.Migrate(); err != nil {
+		log.Fatal(err)
+	}
+
+	tokenManager := token.NewJWTManager(config.JWT.Secret, store, rdb)
+
+	registerAuthServer(
+		grpcServer, tokenManager, store,
+		config.JWT.AuthTokenExpire,
+		config.JWT.RefreshTokenExpire,
+	)
 
 	go func() {
 		logrus.Infoln("Starting grpc server...")
@@ -125,7 +142,7 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 	return serverRunner
 }
 
-func registerServer(
+func registerSearchServer(
 	server *grpc.Server,
 	i2v img2vec.Img2Vec,
 	searchHandler search.Handler,
@@ -135,6 +152,21 @@ func registerServer(
 	logSearchImage bool,
 ) {
 	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(i2v, searchHandler, fetcher, rankers, objectDetector, logSearchImage))
+}
+
+func registerAuthServer(
+	server *grpc.Server,
+	tokenManager token.Manager,
+	storage *storage.Storage,
+	authTokenExpire int64,
+	refreshTokenExpire int64,
+) {
+	pb.RegisterAuthServiceServer(server, NewAuthServiceServer(
+		tokenManager,
+		storage,
+		authTokenExpire,
+		refreshTokenExpire,
+	))
 }
 
 func RunHttpServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown {

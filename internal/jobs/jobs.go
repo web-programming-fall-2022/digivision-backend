@@ -1,8 +1,8 @@
 package jobs
 
 import (
-	"github.com/arimanius/digivision-backend/internal/bootstrap/job"
-	"github.com/arimanius/digivision-backend/internal/cfg"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/bootstrap/job"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/cfg"
 )
 
 func StartJobs(config cfg.Config) []job.WithGracefulShutdown {

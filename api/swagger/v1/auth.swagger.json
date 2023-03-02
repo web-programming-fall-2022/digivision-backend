@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "Digivision API",
+    "title": "Airline Auth API",
     "version": "1.0"
   },
   "schemes": [
@@ -14,14 +14,14 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/crop": {
+    "/api/v1/auth/login": {
       "post": {
-        "operationId": "SearchService_Crop",
+        "operationId": "AuthService_Login",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1CropResponse"
+              "$ref": "#/definitions/v1LoginResponse"
             }
           },
           "404": {
@@ -44,23 +44,23 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/v1CropRequest"
+              "$ref": "#/definitions/v1LoginRequest"
             }
           }
         ],
         "tags": [
-          "SearchService"
+          "AuthService"
         ]
       }
     },
-    "/api/v1/search": {
+    "/api/v1/auth/logout": {
       "post": {
-        "operationId": "SearchService_Search",
+        "operationId": "AuthService_Logout",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1SearchResponse"
+              "properties": {}
             }
           },
           "404": {
@@ -83,32 +83,23 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/v1SearchRequest"
+              "$ref": "#/definitions/v1LogoutRequest"
             }
           }
         ],
         "tags": [
-          "SearchService"
+          "AuthService"
         ]
       }
     },
-    "/api/v1/search-async": {
+    "/api/v1/auth/refresh": {
       "post": {
-        "operationId": "SearchService_AsyncSearch",
+        "operationId": "AuthService_RefreshToken",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "A successful response.",
             "schema": {
-              "type": "object",
-              "properties": {
-                "result": {
-                  "$ref": "#/definitions/v1AsyncSearchResponse"
-                },
-                "error": {
-                  "$ref": "#/definitions/runtimeStreamError"
-                }
-              },
-              "title": "Stream result of v1AsyncSearchResponse"
+              "$ref": "#/definitions/v1RefreshTokenResponse"
             }
           },
           "404": {
@@ -131,12 +122,90 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/v1SearchRequest"
+              "$ref": "#/definitions/v1RefreshTokenRequest"
             }
           }
         ],
         "tags": [
-          "SearchService"
+          "AuthService"
+        ]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "AuthService_Register",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RegisterResponse"
+            }
+          },
+          "404": {
+            "description": "Returned when the resource does not exist.",
+            "schema": {
+              "type": "string",
+              "format": "string"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1RegisterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AuthService"
+        ]
+      }
+    },
+    "/api/v1/auth/userinfo": {
+      "post": {
+        "operationId": "AuthService_UserInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UserInfoResponse"
+            }
+          },
+          "404": {
+            "description": "Returned when the resource does not exist.",
+            "schema": {
+              "type": "string",
+              "format": "string"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1UserInfoRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AuthService"
         ]
       }
     }
@@ -178,180 +247,123 @@
         }
       }
     },
-    "runtimeStreamError": {
+    "v1LoginRequest": {
       "type": "object",
       "properties": {
-        "grpc_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "http_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "message": {
+        "email": {
           "type": "string"
         },
-        "http_status": {
-          "type": "string"
-        },
-        "details": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/protobufAny"
-          }
-        }
-      }
-    },
-    "v1AsyncSearchResponse": {
-      "type": "object",
-      "properties": {
-        "product": {
-          "$ref": "#/definitions/v1Product"
-        }
-      }
-    },
-    "v1Category": {
-      "type": "object",
-      "properties": {
-        "title": {
-          "type": "string"
-        },
-        "url": {
+        "password": {
           "type": "string"
         }
       }
     },
-    "v1CropRequest": {
+    "v1LoginResponse": {
       "type": "object",
       "properties": {
-        "image": {
-          "type": "string",
-          "format": "byte"
-        }
-      }
-    },
-    "v1CropResponse": {
-      "type": "object",
-      "properties": {
-        "top_left": {
-          "$ref": "#/definitions/v1Position"
-        },
-        "bottom_right": {
-          "$ref": "#/definitions/v1Position"
-        }
-      }
-    },
-    "v1Position": {
-      "type": "object",
-      "properties": {
-        "x": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "y": {
-          "type": "integer",
-          "format": "int32"
-        }
-      }
-    },
-    "v1Product": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "score": {
-          "type": "number",
-          "format": "float"
-        },
-        "title": {
+        "auth_token": {
           "type": "string"
         },
-        "url": {
+        "refresh_token": {
+          "type": "string"
+        }
+      }
+    },
+    "v1LogoutRequest": {
+      "type": "object",
+      "properties": {
+        "auth_token": {
           "type": "string"
         },
-        "status": {
+        "refresh_token": {
+          "type": "string"
+        }
+      }
+    },
+    "v1RefreshTokenRequest": {
+      "type": "object",
+      "properties": {
+        "refresh_token": {
+          "type": "string"
+        }
+      }
+    },
+    "v1RefreshTokenResponse": {
+      "type": "object",
+      "properties": {
+        "auth_token": {
           "type": "string"
         },
-        "image_url": {
+        "refresh_token": {
+          "type": "string"
+        }
+      }
+    },
+    "v1RegisterRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
           "type": "string"
         },
-        "rate": {
-          "$ref": "#/definitions/v1Rating"
+        "phone_number": {
+          "type": "string"
         },
-        "categories": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1Category"
-          }
+        "gender": {
+          "type": "string"
         },
-        "price": {
-          "type": "string",
-          "format": "int64"
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
         }
       }
     },
-    "v1Ranker": {
-      "type": "string",
-      "enum": [
-        "FIRST_IMAGE",
-        "DIST_COUNT"
-      ],
-      "default": "FIRST_IMAGE"
-    },
-    "v1Rating": {
+    "v1RegisterResponse": {
       "type": "object",
       "properties": {
-        "rate": {
-          "type": "integer",
-          "format": "int32"
+        "auth_token": {
+          "type": "string"
         },
-        "count": {
-          "type": "integer",
-          "format": "int32"
+        "refresh_token": {
+          "type": "string"
         }
       }
     },
-    "v1SearchParams": {
+    "v1UserInfoRequest": {
       "type": "object",
       "properties": {
-        "top_k": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "ranker": {
-          "$ref": "#/definitions/v1Ranker"
+        "auth_token": {
+          "type": "string"
         }
       }
     },
-    "v1SearchRequest": {
+    "v1UserInfoResponse": {
       "type": "object",
       "properties": {
-        "image": {
-          "type": "string",
-          "format": "byte"
+        "email": {
+          "type": "string"
         },
-        "params": {
-          "$ref": "#/definitions/v1SearchParams"
-        }
-      }
-    },
-    "v1SearchResponse": {
-      "type": "object",
-      "properties": {
-        "products": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1Product"
-          }
+        "phone_number": {
+          "type": "string"
+        },
+        "gender": {
+          "type": "string"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
         }
       }
     }
   },
   "externalDocs": {
-    "description": "Reverse Image Search on Digikala gRPC service with REST/HTTP gateway",
+    "description": "Authentication system for airline project",
     "url": "https://github.com/web-programming-fall-2022/digivision-backend"
   }
 }
