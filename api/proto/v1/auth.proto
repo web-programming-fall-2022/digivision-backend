@@ -60,7 +60,7 @@ message UserInfoResponse {
 
 option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
   info: {
-    title: "Airline Auth API";
+    title: "Digivision Auth API";
     version: "1.0";
   };
   external_docs: {

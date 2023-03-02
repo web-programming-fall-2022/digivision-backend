@@ -58,7 +58,7 @@ deploy-dev: .env
 
 ## Project Vars ##########################################################
 ROOT := github.com/web-programming-fall-2022/digivision-backend
-DOCKER_IMAGE := ghcr.io/arimanius/digivision-backend
+DOCKER_IMAGE := ghcr.io/web-programming-fall-2022/digivision-backend
 .PHONY: help clean update-dependencies test docker
 
 ## Commons Vars ##########################################################

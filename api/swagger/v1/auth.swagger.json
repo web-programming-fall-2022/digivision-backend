@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "Airline Auth API",
+    "title": "Digivision Auth API",
     "version": "1.0"
   },
   "schemes": [
