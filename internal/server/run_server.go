@@ -33,13 +33,6 @@ import (
 )
 
 func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown {
-	serverRunner, err := bootstrap.NewGrpcServerRunner(config.GrpcServerRunnerConfig)
-	if err != nil {
-		logrus.Fatal(err.Error())
-	}
-	// Create the gRPC server
-	grpcServer := serverRunner.GetGrpcServer()
-
 	// Create the Img2Vec service
 	img2vecConnection, err := grpc.Dial(config.Img2Vec.Addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -117,8 +110,6 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 		5,
 	)
 
-	registerSearchServer(grpcServer, i2v, searchHandler, fetcher, rankers, objectDetector, config.Env != "production")
-
 	store := storage.NewStorage(&config.MainDB)
 
 	if err := store.Migrate(); err != nil {
@@ -126,6 +117,19 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 	}
 
 	tokenManager := token.NewJWTManager(config.JWT.Secret, store, rdb)
+
+	serverRunner, err := bootstrap.NewGrpcServerRunner(
+		config.GrpcServerRunnerConfig,
+		[]grpc.UnaryServerInterceptor{NewAuthInterceptor(store, tokenManager).InterceptServer()},
+		nil,
+	)
+	if err != nil {
+		logrus.Fatal(err.Error())
+	}
+	// Create the gRPC server
+	grpcServer := serverRunner.GetGrpcServer()
+
+	registerSearchServer(grpcServer, i2v, searchHandler, fetcher, rankers, objectDetector, config.Env != "production")
 
 	registerAuthServer(
 		grpcServer, tokenManager, store,
@@ -170,7 +174,14 @@ func registerAuthServer(
 }
 
 func RunHttpServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown {
-	mux := runtime.NewServeMux()
+	mux := runtime.NewServeMux(
+		runtime.WithIncomingHeaderMatcher(func(key string) (string, bool) {
+			if key == "Authorization" {
+				return "x-access-token", true
+			}
+			return runtime.DefaultHeaderMatcher(key)
+		}),
+	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	if err := pb.RegisterSearchServiceHandlerFromEndpoint(ctx, mux, fmt.Sprintf("localhost:%d", config.Server.Port), opts); err != nil {
 		logrus.Fatal("Failed to start HTTP gateway for search", err.Error())

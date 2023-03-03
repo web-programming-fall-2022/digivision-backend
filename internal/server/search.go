@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/img2vec"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/od"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/productmeta"
@@ -11,8 +10,6 @@ import (
 	pb "github.com/web-programming-fall-2022/digivision-backend/pkg/api/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"os"
-	"time"
 )
 
 type SearchServiceServer struct {
@@ -44,7 +41,6 @@ func NewSearchServiceServer(
 }
 
 func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest) (*pb.SearchResponse, error) {
-	s.saveImageToFile(req.Image)
 	vector, err := s.img2vec.Vectorize(ctx, req.Image)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to vectorize the image: %v", err)
@@ -72,7 +68,6 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 }
 
 func (s *SearchServiceServer) AsyncSearch(req *pb.SearchRequest, stream pb.SearchService_AsyncSearchServer) error {
-	s.saveImageToFile(req.Image)
 	vector, err := s.img2vec.Vectorize(stream.Context(), req.Image)
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to vectorize the image: %v", err)
@@ -115,12 +110,4 @@ func (s *SearchServiceServer) Crop(ctx context.Context, req *pb.CropRequest) (*p
 			Y: int32(bottomRight.Y),
 		},
 	}, nil
-}
-
-func (s *SearchServiceServer) saveImageToFile(image []byte) error {
-	if !s.logSearchImage {
-		return nil
-	}
-	time := time.Now().Format("2006-01-02_15-04-05")
-	return os.WriteFile(fmt.Sprintf("./data/%s.png", time), image, 0644)
 }

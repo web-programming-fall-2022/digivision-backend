@@ -33,13 +33,17 @@ type GrpcServerRunner interface {
 	Shutdown(ctx context.Context) error
 }
 
-func NewGrpcServerRunner(config GrpcServerRunnerConfig) (GrpcServerRunner, error) {
+func NewGrpcServerRunner(
+	config GrpcServerRunnerConfig,
+	unaryInterceptors []grpc.UnaryServerInterceptor,
+	streamInterceptors []grpc.StreamServerInterceptor,
+) (GrpcServerRunner, error) {
 	runner := &grpcServerRunner{
 		config:           &config,
 		shutDownReqChan:  make(chan bool),
 		shutDownDoneChan: make(chan bool),
 	}
-	err := runner.initialize()
+	err := runner.initialize(unaryInterceptors, streamInterceptors)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +112,9 @@ func (r *grpcServerRunner) Shutdown(ctx context.Context) error {
 	}
 }
 
-func (r *grpcServerRunner) initialize() error {
+func (r *grpcServerRunner) initialize(unaryInterceptors []grpc.UnaryServerInterceptor,
+	streamInterceptors []grpc.StreamServerInterceptor,
+) error {
 	if r.config.Server.Port != 0 {
 		conn, err := net.Listen("tcp", r.config.grpcAddress())
 		if err != nil {
@@ -123,7 +129,7 @@ func (r *grpcServerRunner) initialize() error {
 		r.netListener = r.config.Server.Connection
 	}
 
-	opts, err := r.serverOptions()
+	opts, err := r.serverOptions(unaryInterceptors, streamInterceptors)
 	if err != nil {
 		r.closeConnection()
 		return err
@@ -192,8 +198,11 @@ func (r *grpcServerRunner) Run(ctx context.Context) (runErr error) {
 	return
 }
 
-func (r *grpcServerRunner) serverOptions() ([]grpc.ServerOption, error) {
-	opts := getGrpcMiddlewares(r.config)
+func (r *grpcServerRunner) serverOptions(
+	unaryInterceptors []grpc.UnaryServerInterceptor,
+	streamInterceptors []grpc.StreamServerInterceptor,
+) ([]grpc.ServerOption, error) {
+	opts := getGrpcMiddlewares(r.config, unaryInterceptors, streamInterceptors)
 	certFile := r.config.Server.Auth.CertFile
 	keyFile := r.config.Server.Auth.KeyFile
 	if certFile == "" || keyFile == "" {
@@ -207,7 +216,11 @@ func (r *grpcServerRunner) serverOptions() ([]grpc.ServerOption, error) {
 	return append(opts, grpc.Creds(creds)), nil
 }
 
-func getGrpcMiddlewares(config *GrpcServerRunnerConfig) []grpc.ServerOption {
+func getGrpcMiddlewares(
+	config *GrpcServerRunnerConfig,
+	unaryInterceptors []grpc.UnaryServerInterceptor,
+	streamInterceptors []grpc.StreamServerInterceptor,
+) []grpc.ServerOption {
 	panicRecoveryOpts := []grpc_recovery.Option{
 		grpc_recovery.WithRecoveryHandler(func(p interface{}) error {
 			var l *logrus.Entry
@@ -220,20 +233,23 @@ func getGrpcMiddlewares(config *GrpcServerRunnerConfig) []grpc.ServerOption {
 			return status.Error(codes.Unknown, "panic triggered")
 		}),
 	}
-	var unaryInterceptors []grpc.UnaryServerInterceptor
-	var streamInterceptors []grpc.StreamServerInterceptor
+	var unaryServerInterceptors []grpc.UnaryServerInterceptor
+	var streamServerInterceptors []grpc.StreamServerInterceptor
 
-	unaryInterceptors = append(unaryInterceptors, grpc_recovery.UnaryServerInterceptor(panicRecoveryOpts...))
-	streamInterceptors = append(streamInterceptors, grpc_recovery.StreamServerInterceptor(panicRecoveryOpts...))
+	unaryServerInterceptors = append(unaryServerInterceptors, grpc_recovery.UnaryServerInterceptor(panicRecoveryOpts...))
+	streamServerInterceptors = append(streamServerInterceptors, grpc_recovery.StreamServerInterceptor(panicRecoveryOpts...))
 
 	if config.Prometheus.Enabled {
-		unaryInterceptors = append(unaryInterceptors, grpc_prometheus.UnaryServerInterceptor)
-		streamInterceptors = append(streamInterceptors, grpc_prometheus.StreamServerInterceptor)
+		unaryServerInterceptors = append(unaryServerInterceptors, grpc_prometheus.UnaryServerInterceptor)
+		streamServerInterceptors = append(streamServerInterceptors, grpc_prometheus.StreamServerInterceptor)
 	}
 
+	unaryServerInterceptors = append(unaryServerInterceptors, unaryInterceptors...)
+	streamServerInterceptors = append(streamServerInterceptors, streamInterceptors...)
+
 	return []grpc.ServerOption{
-		grpc_middleware.WithUnaryServerChain(unaryInterceptors...),
-		grpc_middleware.WithStreamServerChain(streamInterceptors...),
+		grpc_middleware.WithUnaryServerChain(unaryServerInterceptors...),
+		grpc_middleware.WithStreamServerChain(streamServerInterceptors...),
 	}
 }
 

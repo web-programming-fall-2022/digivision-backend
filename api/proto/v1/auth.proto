@@ -47,7 +47,6 @@ message RegisterResponse {
 }
 
 message UserInfoRequest {
-  string auth_token = 1;
 }
 
 message UserInfoResponse {

@@ -334,12 +334,7 @@
       }
     },
     "v1UserInfoRequest": {
-      "type": "object",
-      "properties": {
-        "auth_token": {
-          "type": "string"
-        }
-      }
+      "type": "object"
     },
     "v1UserInfoResponse": {
       "type": "object",
