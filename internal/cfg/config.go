@@ -46,6 +46,13 @@ type Config struct {
 	Redis struct {
 		Addr string
 	}
+
+	S3 struct {
+		Endpoint  string
+		AccessKey string `mapstructure:"access_key" yaml:"access_key"`
+		SecretKey string `mapstructure:"secret_key" yaml:"secret_key"`
+		UseSSL    bool   `mapstructure:"use_ssl" yaml:"use_ssl"`
+	}
 }
 
 func (c *Config) Validate() error {

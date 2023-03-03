@@ -1,11 +1,13 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/img2vec"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/od"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/productmeta"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/rank"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/s3"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/search"
 	pb "github.com/web-programming-fall-2022/digivision-backend/pkg/api/v1"
 	"google.golang.org/grpc/codes"
@@ -19,7 +21,7 @@ type SearchServiceServer struct {
 	rankers        map[pb.Ranker]rank.Ranker
 	objectDetector od.ObjectDetector
 	fetcher        productmeta.Fetcher
-	logSearchImage bool
+	s3Client       s3.S3Client
 }
 
 func NewSearchServiceServer(
@@ -28,7 +30,7 @@ func NewSearchServiceServer(
 	fetcher productmeta.Fetcher,
 	rankers map[pb.Ranker]rank.Ranker,
 	objectDetector od.ObjectDetector,
-	logSearchImage bool,
+	s3Client s3.S3Client,
 ) *SearchServiceServer {
 	return &SearchServiceServer{
 		img2vec:        i2v,
@@ -36,11 +38,15 @@ func NewSearchServiceServer(
 		fetcher:        fetcher,
 		rankers:        rankers,
 		objectDetector: objectDetector,
-		logSearchImage: logSearchImage,
+		s3Client:       s3Client,
 	}
 }
 
 func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest) (*pb.SearchResponse, error) {
+	err := s.s3Client.Upload(ctx, "history-images", "test.jpg", bytes.NewReader(req.Image), int64(len(req.Image)))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to upload the image: %v", err)
+	}
 	vector, err := s.img2vec.Vectorize(ctx, req.Image)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to vectorize the image: %v", err)

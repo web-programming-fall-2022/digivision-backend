@@ -19,6 +19,7 @@ import (
 	"github.com/web-programming-fall-2022/digivision-backend/internal/od"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/productmeta"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/rank"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/s3"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/search"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/storage"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/token"
@@ -118,6 +119,11 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 
 	tokenManager := token.NewJWTManager(config.JWT.Secret, store, rdb)
 
+	s3Client, err := s3.NewMinioClient(config.S3.Endpoint, config.S3.AccessKey, config.S3.SecretKey, config.S3.UseSSL)
+	if err != nil {
+		logrus.Fatal(err.Error())
+	}
+
 	serverRunner, err := bootstrap.NewGrpcServerRunner(
 		config.GrpcServerRunnerConfig,
 		[]grpc.UnaryServerInterceptor{NewAuthInterceptor(store, tokenManager).InterceptServer()},
@@ -129,7 +135,7 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 	// Create the gRPC server
 	grpcServer := serverRunner.GetGrpcServer()
 
-	registerSearchServer(grpcServer, i2v, searchHandler, fetcher, rankers, objectDetector, config.Env != "production")
+	registerSearchServer(grpcServer, i2v, searchHandler, fetcher, rankers, objectDetector, s3Client)
 
 	registerAuthServer(
 		grpcServer, tokenManager, store,
@@ -153,9 +159,9 @@ func registerSearchServer(
 	fetcher productmeta.Fetcher,
 	rankers map[pb.Ranker]rank.Ranker,
 	objectDetector od.ObjectDetector,
-	logSearchImage bool,
+	s3Client s3.S3Client,
 ) {
-	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(i2v, searchHandler, fetcher, rankers, objectDetector, logSearchImage))
+	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(i2v, searchHandler, fetcher, rankers, objectDetector, s3Client))
 }
 
 func registerAuthServer(
