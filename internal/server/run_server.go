@@ -173,7 +173,10 @@ func RunHttpServer(ctx context.Context, config cfg.Config) job.WithGracefulShutd
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	if err := pb.RegisterSearchServiceHandlerFromEndpoint(ctx, mux, fmt.Sprintf("localhost:%d", config.Server.Port), opts); err != nil {
-		logrus.Fatal("Failed to start HTTP gateway", err.Error())
+		logrus.Fatal("Failed to start HTTP gateway for search", err.Error())
+	}
+	if err := pb.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, fmt.Sprintf("localhost:%d", config.Server.Port), opts); err != nil {
+		logrus.Fatal("Failed to start HTTP gateway for auth", err.Error())
 	}
 
 	srv := &http.Server{
