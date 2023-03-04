@@ -9,6 +9,7 @@ import (
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	img2vecPb "github.com/web-programming-fall-2022/digivision-backend/internal/api/img2vec"
 	odPb "github.com/web-programming-fall-2022/digivision-backend/internal/api/od"
@@ -30,6 +31,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"regexp"
 	"time"
 )
 
@@ -198,7 +200,7 @@ func RunHttpServer(ctx context.Context, config cfg.Config) job.WithGracefulShutd
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", config.HttpServer.Port),
-		Handler: wsproxy.WebsocketProxy(mux),
+		Handler: wsproxy.WebsocketProxy(cors(mux)),
 	}
 
 	logrus.Info("Starting HTTP/REST Gateway...", srv.Addr)
@@ -209,4 +211,28 @@ func RunHttpServer(ctx context.Context, config cfg.Config) job.WithGracefulShutd
 		}
 	}()
 	return srv
+}
+
+func allowedOrigin(origin string) bool {
+	if viper.GetString("cors") == "*" {
+		return true
+	}
+	if matched, _ := regexp.MatchString(viper.GetString("cors"), origin); matched {
+		return true
+	}
+	return false
+}
+
+func cors(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if allowedOrigin(r.Header.Get("Origin")) {
+			w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE")
+			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization, ResponseType")
+		}
+		if r.Method == "OPTIONS" {
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
 }
