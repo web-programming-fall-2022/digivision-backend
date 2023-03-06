@@ -25,6 +25,7 @@ type SearchServiceClient interface {
 	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
 	AsyncSearch(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (SearchService_AsyncSearchClient, error)
 	Crop(ctx context.Context, in *CropRequest, opts ...grpc.CallOption) (*CropResponse, error)
+	GetSearchHistories(ctx context.Context, in *GetSearchHistoriesRequest, opts ...grpc.CallOption) (*GetSearchHistoriesResponse, error)
 }
 
 type searchServiceClient struct {
@@ -85,6 +86,15 @@ func (c *searchServiceClient) Crop(ctx context.Context, in *CropRequest, opts ..
 	return out, nil
 }
 
+func (c *searchServiceClient) GetSearchHistories(ctx context.Context, in *GetSearchHistoriesRequest, opts ...grpc.CallOption) (*GetSearchHistoriesResponse, error) {
+	out := new(GetSearchHistoriesResponse)
+	err := c.cc.Invoke(ctx, "/v1.SearchService/GetSearchHistories", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SearchServiceServer is the server API for SearchService service.
 // All implementations must embed UnimplementedSearchServiceServer
 // for forward compatibility
@@ -92,6 +102,7 @@ type SearchServiceServer interface {
 	Search(context.Context, *SearchRequest) (*SearchResponse, error)
 	AsyncSearch(*SearchRequest, SearchService_AsyncSearchServer) error
 	Crop(context.Context, *CropRequest) (*CropResponse, error)
+	GetSearchHistories(context.Context, *GetSearchHistoriesRequest) (*GetSearchHistoriesResponse, error)
 	mustEmbedUnimplementedSearchServiceServer()
 }
 
@@ -107,6 +118,9 @@ func (UnimplementedSearchServiceServer) AsyncSearch(*SearchRequest, SearchServic
 }
 func (UnimplementedSearchServiceServer) Crop(context.Context, *CropRequest) (*CropResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Crop not implemented")
+}
+func (UnimplementedSearchServiceServer) GetSearchHistories(context.Context, *GetSearchHistoriesRequest) (*GetSearchHistoriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSearchHistories not implemented")
 }
 func (UnimplementedSearchServiceServer) mustEmbedUnimplementedSearchServiceServer() {}
 
@@ -178,6 +192,24 @@ func _SearchService_Crop_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SearchService_GetSearchHistories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSearchHistoriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).GetSearchHistories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/v1.SearchService/GetSearchHistories",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).GetSearchHistories(ctx, req.(*GetSearchHistoriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SearchService_ServiceDesc is the grpc.ServiceDesc for SearchService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -192,6 +224,10 @@ var SearchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Crop",
 			Handler:    _SearchService_Crop_Handler,
+		},
+		{
+			MethodName: "GetSearchHistories",
+			Handler:    _SearchService_GetSearchHistories_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -10,7 +10,7 @@ type SearchHistory struct {
 	UserID       uint
 	User         UserAccount `gorm:"ONDELETE:CASCADE"`
 	QueryAddress string
-	Result       []SearchHistoryResult `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Results      []SearchHistoryResult `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 type SearchHistoryResult struct {
@@ -29,20 +29,20 @@ func (storage *Storage) CreateSearchHistory(history *SearchHistory) error {
 
 func (storage *Storage) GetSearchHistoryByID(id uint) (*SearchHistory, error) {
 	history := SearchHistory{}
-	storage.DB.First(&history, id).Preload("Result")
+	storage.DB.First(&history, id).Preload("Results")
 	if history.ID == 0 {
 		return nil, errors.New("history not found")
 	}
 	return &history, nil
 }
 
-func (storage *Storage) GetSearchHistoryByUserID(userID uint, offset int, limit int) (*[]SearchHistory, error) {
+func (storage *Storage) GetSearchHistoryByUserID(userID uint, offset int, limit int) ([]SearchHistory, error) {
 	history := make([]SearchHistory, 0)
 	storage.DB.Where("user_id = ?", userID).Offset(offset).Limit(limit).Find(&history)
 	if len(history) == 0 {
 		return nil, errors.New("history not found")
 	}
-	return &history, nil
+	return history, nil
 }
 
 func (storage *Storage) CreateSearchHistoryResult(result *SearchHistoryResult) error {

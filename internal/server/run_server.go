@@ -161,7 +161,7 @@ func registerSearchServer(
 	fetcher productmeta.Fetcher,
 	rankers map[pb.Ranker]rank.Ranker,
 	objectDetector od.ObjectDetector,
-	s3Client s3.S3Client,
+	s3Client s3.Client,
 ) {
 	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(i2v, searchHandler, fetcher, rankers, objectDetector, s3Client))
 }

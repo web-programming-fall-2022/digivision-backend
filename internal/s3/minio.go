@@ -37,3 +37,7 @@ func (m *MinioClient) Upload(ctx context.Context, bucket, path string, file io.R
 	_, err = m.minioClient.PutObject(ctx, bucket, path, file, size, minio.PutObjectOptions{})
 	return err
 }
+
+func (m *MinioClient) Download(ctx context.Context, bucket, path string) (io.ReadCloser, error) {
+	return m.minioClient.GetObject(ctx, bucket, path, minio.GetObjectOptions{})
+}

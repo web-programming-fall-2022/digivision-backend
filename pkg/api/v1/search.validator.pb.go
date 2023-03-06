@@ -86,3 +86,26 @@ func (this *CropResponse) Validate() error {
 	}
 	return nil
 }
+func (this *GetSearchHistoriesRequest) Validate() error {
+	return nil
+}
+func (this *SearchHistory) Validate() error {
+	for _, item := range this.Products {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Products", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *GetSearchHistoriesResponse) Validate() error {
+	for _, item := range this.Histories {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Histories", err)
+			}
+		}
+	}
+	return nil
+}

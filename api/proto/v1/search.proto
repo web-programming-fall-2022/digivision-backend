@@ -6,6 +6,31 @@ package v1;
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+  info: {
+    title: "Digivision API";
+    version: "1.0";
+  };
+  external_docs: {
+    url: "https://github.com/web-programming-fall-2022/digivision-backend";
+    description: "Reverse Image Search on Digikala gRPC service with REST/HTTP gateway";
+  }
+  schemes: HTTPS;
+  consumes: "application/json";
+  produces: "application/json";
+  responses: {
+    key: "404";
+    value: {
+      description: "Returned when the resource does not exist.";
+      schema: {
+        json_schema: {
+          type: STRING;
+        }
+      }
+    }
+  }
+};
+
 enum Ranker {
   FIRST_IMAGE = 0;
   DIST_COUNT = 1;
@@ -65,30 +90,20 @@ message CropResponse {
   Position bottom_right = 2;
 }
 
-option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
-  info: {
-    title: "Digivision API";
-    version: "1.0";
-  };
-  external_docs: {
-    url: "https://github.com/web-programming-fall-2022/digivision-backend";
-    description: "Reverse Image Search on Digikala gRPC service with REST/HTTP gateway";
-  }
-  schemes: HTTPS;
-  consumes: "application/json";
-  produces: "application/json";
-  responses: {
-    key: "404";
-    value: {
-      description: "Returned when the resource does not exist.";
-      schema: {
-        json_schema: {
-          type: STRING;
-        }
-      }
-    }
-  }
-};
+message GetSearchHistoriesRequest {
+  int32 offset = 1;
+  int32 limit = 2;
+}
+
+message SearchHistory {
+  int32 id = 1;
+  bytes image = 2;
+  repeated Product products = 3;
+}
+
+message GetSearchHistoriesResponse {
+  repeated SearchHistory histories = 1;
+}
 
 service SearchService {
   rpc Search(SearchRequest) returns (SearchResponse) {
@@ -107,6 +122,11 @@ service SearchService {
     option (google.api.http) = {
       post: "/api/v1/crop"
       body: "*"
+    };
+  }
+  rpc GetSearchHistories(GetSearchHistoriesRequest) returns (GetSearchHistoriesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/search-histories"
     };
   }
 }

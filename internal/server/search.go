@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/errors"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/img2vec"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/od"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/productmeta"
@@ -16,6 +17,8 @@ import (
 	pb "github.com/web-programming-fall-2022/digivision-backend/pkg/api/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io"
+	"strconv"
 )
 
 type SearchServiceServer struct {
@@ -25,7 +28,7 @@ type SearchServiceServer struct {
 	rankers        map[pb.Ranker]rank.Ranker
 	objectDetector od.ObjectDetector
 	fetcher        productmeta.Fetcher
-	s3Client       s3.S3Client
+	s3Client       s3.Client
 	storage        *storage.Storage
 }
 
@@ -35,7 +38,7 @@ func NewSearchServiceServer(
 	fetcher productmeta.Fetcher,
 	rankers map[pb.Ranker]rank.Ranker,
 	objectDetector od.ObjectDetector,
-	s3Client s3.S3Client,
+	s3Client s3.Client,
 ) *SearchServiceServer {
 	return &SearchServiceServer{
 		img2vec:        i2v,
@@ -150,4 +153,53 @@ func (s *SearchServiceServer) Crop(ctx context.Context, req *pb.CropRequest) (*p
 			Y: int32(bottomRight.Y),
 		},
 	}, nil
+}
+
+func (s *SearchServiceServer) GetSearchHistories(
+	ctx context.Context, req *pb.GetSearchHistoriesRequest,
+) (*pb.GetSearchHistoriesResponse, error) {
+	user := GetContextUser(ctx)
+	if user == nil {
+		return nil, errors.NotLoggedIn
+	}
+
+	histories, err := s.storage.GetSearchHistoryByUserID(user.ID, int(req.Offset), int(req.Limit))
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "there is no search history")
+	}
+
+	var respHistories []*pb.SearchHistory
+	for _, history := range histories {
+		imageReader, err := s.s3Client.Download(ctx, "history-images", history.QueryAddress)
+		if err != nil {
+			logrus.Errorf("failed to download image: %v", err)
+			continue
+		}
+		image, err := io.ReadAll(imageReader)
+		if err != nil {
+			logrus.Errorf("failed to read image: %v", err)
+			continue
+		}
+		products := make([]rank.Product, 0)
+		for _, item := range history.Results {
+			products = append(products, rank.Product{
+				Id:    strconv.Itoa(int(item.ProductID)),
+				Score: 0,
+			})
+		}
+		productsChan := s.fetcher.AsyncFetch(ctx, products, len(products))
+		productsList := make([]*pb.Product, 0)
+		for product := range productsChan {
+			if product == nil {
+				continue
+			}
+			productsList = append(productsList, product.Product)
+		}
+		respHistories = append(respHistories, &pb.SearchHistory{
+			Id:       int32(history.ID),
+			Image:    image,
+			Products: productsList,
+		})
+	}
+	return &pb.GetSearchHistoriesResponse{Histories: respHistories}, nil
 }
