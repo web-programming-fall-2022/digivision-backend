@@ -10,7 +10,7 @@ type FavoriteList struct {
 	UserID uint
 	User   UserAccount `gorm:"ONDELETE:CASCADE"`
 	Name   string
-	items  []FavoriteListItem `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Items  []FavoriteListItem `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 type FavoriteListItem struct {
@@ -45,12 +45,33 @@ func (storage *Storage) GetFavoriteListsByUserID(userID uint) (*[]FavoriteList, 
 	return &list, nil
 }
 
+func (storage *Storage) GetFavoriteListByUserIDAndName(userID uint, name string) (*FavoriteList, error) {
+	list := FavoriteList{}
+	storage.DB.Where("user_id = ? AND name = ?", userID, name).First(&list)
+	if list.ID == 0 {
+		return nil, errors.New("list not found")
+	}
+	return &list, nil
+}
+
 func (storage *Storage) AddItemToList(listID uint, productID uint) error {
 	item := FavoriteListItem{
 		FavoritesListID: listID,
 		ProductID:       productID,
 	}
 	if err := storage.DB.Create(&item).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (storage *Storage) RemoveItemFromList(listID uint, productID uint) error {
+	item := FavoriteListItem{}
+	storage.DB.Where("favorites_list_id = ? AND product_id = ?", listID, productID).First(&item)
+	if item.ID == 0 {
+		return errors.New("item not found")
+	}
+	if err := storage.DB.Delete(&item).Error; err != nil {
 		return err
 	}
 	return nil

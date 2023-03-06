@@ -181,6 +181,14 @@ func registerAuthServer(
 	))
 }
 
+func registerFavoriteServer(
+	server *grpc.Server,
+	storage *storage.Storage,
+	fetcher productmeta.Fetcher,
+) {
+	pb.RegisterFavoriteServiceServer(server, NewFavoriteServiceServer(storage, fetcher))
+}
+
 func RunHttpServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown {
 	mux := runtime.NewServeMux(
 		runtime.WithIncomingHeaderMatcher(func(key string) (string, bool) {
@@ -196,6 +204,9 @@ func RunHttpServer(ctx context.Context, config cfg.Config) job.WithGracefulShutd
 	}
 	if err := pb.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, fmt.Sprintf("localhost:%d", config.Server.Port), opts); err != nil {
 		logrus.Fatal("Failed to start HTTP gateway for auth", err.Error())
+	}
+	if err := pb.RegisterFavoriteServiceHandlerFromEndpoint(ctx, mux, fmt.Sprintf("localhost:%d", config.Server.Port), opts); err != nil {
+		logrus.Fatal("Failed to start HTTP gateway for favorite", err.Error())
 	}
 
 	srv := &http.Server{

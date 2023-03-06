@@ -11,4 +11,5 @@ var (
 	InvalidAccessToken = status.Error(codes.Unauthenticated, "Invalid access token")
 	Internal           = status.Error(codes.Internal, "Internal error")
 	NotLoggedIn        = status.Error(codes.Unauthenticated, "You are not logged in")
+	NotFound           = status.Error(codes.NotFound, "Not found")
 )

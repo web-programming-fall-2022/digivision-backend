@@ -64,7 +64,7 @@ option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
   };
   external_docs: {
     url: "https://github.com/web-programming-fall-2022/digivision-backend";
-    description: "Authentication system for airline project";
+    description: "Authentication system for digivision";
   }
   schemes: HTTPS;
   consumes: "application/json";

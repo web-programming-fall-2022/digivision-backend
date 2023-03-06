@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+option go_package = "./;v1";
+package v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+
+import "search.proto";
+
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+  info: {
+    title: "Digivision Auth API";
+    version: "1.0";
+  };
+  external_docs: {
+    url: "https://github.com/web-programming-fall-2022/digivision-backend";
+    description: "Favorite apis for digivision";
+  }
+  schemes: HTTPS;
+  consumes: "application/json";
+  produces: "application/json";
+  responses: {
+    key: "404";
+    value: {
+      description: "Returned when the resource does not exist.";
+      schema: {
+        json_schema: {
+          type: STRING;
+        }
+      }
+    }
+  }
+};
+
+message AddItemToFavoritesRequest {
+  string list_name = 1 [(validator.field) = {regex: "^favorites$"}];
+  int32 product_id = 2 [(validator.field) = {int_gt: 0}];
+}
+
+message AddItemToFavoritesResponse {
+  bool success = 1;
+}
+
+message RemoveItemFromFavoritesRequest {
+  string list_name = 1 [(validator.field) = {regex: "^favorites$"}];
+  int32 product_id = 2 [(validator.field) = {int_gt: 0}];
+}
+
+message RemoveItemFromFavoritesResponse {
+  bool success = 1;
+}
+
+message GetFavoritesRequest {
+  string list_name = 1 [(validator.field) = {regex: "^favorites$"}];
+}
+
+message GetFavoritesResponse {
+  repeated Product products = 1;
+}
+
+service FavoriteService {
+  rpc AddItemToFavorites(AddItemToFavoritesRequest) returns (AddItemToFavoritesResponse) {
+    option (google.api.http) = {
+      post: "/v1/favorite"
+      body: "*"
+    };
+  }
+  rpc RemoveItemFromFavorites(RemoveItemFromFavoritesRequest) returns (RemoveItemFromFavoritesResponse) {
+    option (google.api.http) = {
+      delete: "/v1/favorite/{list_name}/{product_id}"
+    };
+  }
+  rpc GetFavorites(GetFavoritesRequest) returns (GetFavoritesResponse) {
+    option (google.api.http) = {
+      get: "/v1/favorite/{list_name}"
+
+    };
+  }
+}

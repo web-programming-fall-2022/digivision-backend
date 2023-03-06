@@ -16,17 +16,35 @@ prometheus:
   port: 8000
 
 img2vec:
-  addr: localhost:50052
+  addr: 192.168.1.110:50052
 
 milvus:
-  addr: localhost:19530
+  addr: 192.168.1.110:19530
   vectorDim: 768
   metricType: L2
   nProbe: 19
   collectionName: products_revis_digikala_clip_ViT_L_14_336px
 
 objectDetector:
-  addr: localhost:50052
+  addr: 192.168.1.110:50053
 
 redis:
-  addr: localhost:6379
+  addr: 192.168.1.110:6379
+
+jwt:
+  secret: gMRL7Iwo7mIg6CXt2DSS1iMe8sEvTMJkZDrrd+AGEh4WVL+dEPkgJIFtujcBvN3C
+  auth_token_expire: 3600
+  refresh_token_expire: 86400
+
+main_db:
+  host: 192.168.1.110
+  port: 5432
+  username: postgres
+  password: DPZ4ZCtygy5rGQRMjkp1DkD6OuAucZtAwzeO6rcWg0
+  db_name: digivision
+
+s3:
+  endpoint: 192.168.1.110:9000
+  access_key: minioadmin
+  secret_key: minioadmin
+  use_ssl: false
