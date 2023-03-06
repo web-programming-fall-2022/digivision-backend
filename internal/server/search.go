@@ -3,12 +3,16 @@ package server
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/img2vec"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/od"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/productmeta"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/rank"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/s3"
 	"github.com/web-programming-fall-2022/digivision-backend/internal/search"
+	"github.com/web-programming-fall-2022/digivision-backend/internal/storage"
 	pb "github.com/web-programming-fall-2022/digivision-backend/pkg/api/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,6 +26,7 @@ type SearchServiceServer struct {
 	objectDetector od.ObjectDetector
 	fetcher        productmeta.Fetcher
 	s3Client       s3.S3Client
+	storage        *storage.Storage
 }
 
 func NewSearchServiceServer(
@@ -43,7 +48,27 @@ func NewSearchServiceServer(
 }
 
 func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest) (*pb.SearchResponse, error) {
-	err := s.s3Client.Upload(ctx, "history-images", "test.jpg", bytes.NewReader(req.Image), int64(len(req.Image)))
+	err := req.Validate()
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var history *storage.SearchHistory
+	user := GetContextUser(ctx)
+	if user != nil {
+		path := fmt.Sprintf("%s.jpg", uuid.New().String())
+		err := s.s3Client.Upload(ctx, "history-images", path, bytes.NewReader(req.Image), int64(len(req.Image)))
+		if err != nil {
+			logrus.Errorf("failed to upload image to s3: %v", err)
+		} else {
+			history = &storage.SearchHistory{
+				UserID:       user.ID,
+				QueryAddress: path,
+			}
+			err = s.storage.CreateSearchHistory(history)
+		}
+	}
+
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to upload the image: %v", err)
 	}
@@ -68,6 +93,15 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 			}
 			if resp.Product != nil {
 				resultProducts = append(resultProducts, resp.Product)
+				if history != nil && history.ID != 0 {
+					err := s.storage.CreateSearchHistoryResult(&storage.SearchHistoryResult{
+						SearchHistoryID: history.ID,
+						ProductID:       uint(resp.Product.Id),
+					})
+					if err != nil {
+						logrus.Errorf("failed to create search history result: %v", err)
+					}
+				}
 			}
 		}
 	}

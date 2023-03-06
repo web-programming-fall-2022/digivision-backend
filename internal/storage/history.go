@@ -44,3 +44,10 @@ func (storage *Storage) GetSearchHistoryByUserID(userID uint, offset int, limit 
 	}
 	return &history, nil
 }
+
+func (storage *Storage) CreateSearchHistoryResult(result *SearchHistoryResult) error {
+	if err := storage.DB.Create(result).Error; err != nil {
+		return err
+	}
+	return nil
+}
