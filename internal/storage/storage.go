@@ -49,6 +49,18 @@ func (storage *Storage) Migrate() error {
 	if err := storage.DB.AutoMigrate(&UnauthorizedToken{}); err != nil {
 		return errors.Wrap(err, "failed to migrate UnauthorizedToken")
 	}
+	if err := storage.DB.AutoMigrate(&FavoriteList{}); err != nil {
+		return errors.Wrap(err, "failed to migrate FavoriteList")
+	}
+	if err := storage.DB.AutoMigrate(&FavoriteListItem{}); err != nil {
+		return errors.Wrap(err, "failed to migrate FavoriteListItem")
+	}
+	if err := storage.DB.AutoMigrate(&SearchHistory{}); err != nil {
+		return errors.Wrap(err, "failed to migrate SearchHistory")
+	}
+	if err := storage.DB.AutoMigrate(&SearchHistoryResult{}); err != nil {
+		return errors.Wrap(err, "failed to migrate SearchHistoryResult")
+	}
 	return nil
 }
 
