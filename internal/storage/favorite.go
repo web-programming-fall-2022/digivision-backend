@@ -10,7 +10,7 @@ type FavoriteList struct {
 	UserID uint
 	User   UserAccount `gorm:"ONDELETE:CASCADE"`
 	Name   string
-	Items  []FavoriteListItem `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Items  []FavoriteListItem
 }
 
 type FavoriteListItem struct {

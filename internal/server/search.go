@@ -51,6 +51,7 @@ func NewSearchServiceServer(
 }
 
 func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest) (*pb.SearchResponse, error) {
+	logrus.Debug("search called")
 	err := req.Validate()
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -71,6 +72,7 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 			err = s.storage.CreateSearchHistory(history)
 		}
 	}
+	logrus.Debug("creating history done")
 
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to upload the image: %v", err)
@@ -84,6 +86,7 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 		return nil, status.Errorf(codes.Internal, "failed to search: %v", err)
 	}
 	products := s.rankers[req.Params.Ranker].Rank(productImages)
+	logrus.Debug("ranking done")
 	respChan := s.fetcher.AsyncFetch(ctx, products, int(req.Params.TopK))
 	var resultProducts []*pb.Product
 	for {
@@ -120,6 +123,7 @@ func (s *SearchServiceServer) AsyncSearch(req *pb.SearchRequest, stream pb.Searc
 		return status.Errorf(codes.Internal, "failed to search: %v", err)
 	}
 	products := s.rankers[req.Params.Ranker].Rank(productImages)
+	logrus.Debug("ranking done")
 	respChan := s.fetcher.AsyncFetch(stream.Context(), products, int(req.Params.TopK))
 	for {
 		select {

@@ -10,7 +10,7 @@ type SearchHistory struct {
 	UserID       uint
 	User         UserAccount `gorm:"ONDELETE:CASCADE"`
 	QueryAddress string
-	Results      []SearchHistoryResult `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Results      []SearchHistoryResult
 }
 
 type SearchHistoryResult struct {
