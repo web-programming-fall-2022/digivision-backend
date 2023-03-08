@@ -15,9 +15,9 @@ type FavoriteList struct {
 
 type FavoriteListItem struct {
 	gorm.Model
-	FavoritesListID uint
-	FavoritesList   FavoriteList `gorm:"ONDELETE:CASCADE"`
-	ProductID       uint
+	FavoriteListID uint
+	FavoriteList   FavoriteList `gorm:"ONDELETE:CASCADE"`
+	ProductID      uint
 }
 
 func (storage *Storage) CreateFavoriteList(list *FavoriteList) error {
@@ -56,8 +56,8 @@ func (storage *Storage) GetFavoriteListByUserIDAndName(userID uint, name string)
 
 func (storage *Storage) AddItemToList(listID uint, productID uint) error {
 	item := FavoriteListItem{
-		FavoritesListID: listID,
-		ProductID:       productID,
+		FavoriteListID: listID,
+		ProductID:      productID,
 	}
 	if err := storage.DB.Create(&item).Error; err != nil {
 		return err
