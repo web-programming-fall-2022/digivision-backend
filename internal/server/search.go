@@ -39,6 +39,7 @@ func NewSearchServiceServer(
 	rankers map[pb.Ranker]rank.Ranker,
 	objectDetector od.ObjectDetector,
 	s3Client s3.Client,
+	store *storage.Storage,
 ) *SearchServiceServer {
 	return &SearchServiceServer{
 		img2vec:        i2v,
@@ -47,6 +48,7 @@ func NewSearchServiceServer(
 		rankers:        rankers,
 		objectDetector: objectDetector,
 		s3Client:       s3Client,
+		storage:        store,
 	}
 }
 

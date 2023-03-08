@@ -137,7 +137,7 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 	// Create the gRPC server
 	grpcServer := serverRunner.GetGrpcServer()
 
-	registerSearchServer(grpcServer, i2v, searchHandler, fetcher, rankers, objectDetector, s3Client)
+	registerSearchServer(grpcServer, i2v, searchHandler, fetcher, rankers, objectDetector, s3Client, store)
 
 	registerAuthServer(
 		grpcServer, tokenManager, store,
@@ -162,8 +162,17 @@ func registerSearchServer(
 	rankers map[pb.Ranker]rank.Ranker,
 	objectDetector od.ObjectDetector,
 	s3Client s3.Client,
+	store *storage.Storage,
 ) {
-	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(i2v, searchHandler, fetcher, rankers, objectDetector, s3Client))
+	pb.RegisterSearchServiceServer(server, NewSearchServiceServer(
+		i2v,
+		searchHandler,
+		fetcher,
+		rankers,
+		objectDetector,
+		s3Client,
+		store,
+	))
 }
 
 func registerAuthServer(
