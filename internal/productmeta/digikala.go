@@ -112,7 +112,7 @@ func (f DigikalaFetcher) AsyncFetch(ctx context.Context, products []rank.Product
 
 	responses := make([]chan *ProductWithError, len(products))
 	for i := range products {
-		responses[i] = make(chan *ProductWithError)
+		responses[i] = make(chan *ProductWithError, 1)
 	}
 	innerCtx, cancel := context.WithCancel(ctx)
 	go func() {
@@ -179,7 +179,6 @@ func (f DigikalaFetcher) singleAsyncFetch(ctx context.Context, product rank.Prod
 				}
 				return
 			}
-			time.Sleep(1 * time.Second)
 			if retryCount >= f.maxRetry {
 				resp <- &ProductWithError{
 					Product: nil,
@@ -187,6 +186,7 @@ func (f DigikalaFetcher) singleAsyncFetch(ctx context.Context, product rank.Prod
 				}
 				return
 			}
+			time.Sleep(1 * time.Second)
 			p, e = f.Fetch(ctx, product)
 			retryCount++
 		}

@@ -106,7 +106,7 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 	httpClient := resty.New()
 	fetcher := productmeta.NewDigikalaFetcher(
 		"https://www.digikala.com",
-		"https://api.digikala.com/v1/product/",
+		"https://api.digikala.com/v1/product",
 		httpClient,
 		rdb,
 		3,

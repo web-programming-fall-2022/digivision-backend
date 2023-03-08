@@ -73,7 +73,6 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 		}
 	}
 	logrus.Debug("creating history done")
-
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to upload the image: %v", err)
 	}
@@ -108,6 +107,8 @@ func (s *SearchServiceServer) Search(ctx context.Context, req *pb.SearchRequest)
 						logrus.Errorf("failed to create search history result: %v", err)
 					}
 				}
+			} else {
+				logrus.Error("error in fetching product: ", resp.Error)
 			}
 		}
 	}
@@ -123,7 +124,6 @@ func (s *SearchServiceServer) AsyncSearch(req *pb.SearchRequest, stream pb.Searc
 		return status.Errorf(codes.Internal, "failed to search: %v", err)
 	}
 	products := s.rankers[req.Params.Ranker].Rank(productImages)
-	logrus.Debug("ranking done")
 	respChan := s.fetcher.AsyncFetch(stream.Context(), products, int(req.Params.TopK))
 	for {
 		select {
