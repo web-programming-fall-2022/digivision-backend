@@ -14,7 +14,7 @@
     "application/json"
   ],
   "paths": {
-    "/v1/favorite": {
+    "/api/v1/favorite": {
       "post": {
         "operationId": "FavoriteService_AddItemToFavorites",
         "responses": {
@@ -53,7 +53,7 @@
         ]
       }
     },
-    "/v1/favorite/{list_name}": {
+    "/api/v1/favorite/{list_name}": {
       "get": {
         "operationId": "FavoriteService_GetFavorites",
         "responses": {
@@ -90,7 +90,7 @@
         ]
       }
     },
-    "/v1/favorite/{list_name}/{product_id}": {
+    "/api/v1/favorite/{list_name}/{product_id}": {
       "delete": {
         "operationId": "FavoriteService_RemoveItemFromFavorites",
         "responses": {

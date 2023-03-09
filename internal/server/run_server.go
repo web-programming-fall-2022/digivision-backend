@@ -145,6 +145,12 @@ func RunServer(ctx context.Context, config cfg.Config) job.WithGracefulShutdown 
 		config.JWT.RefreshTokenExpire,
 	)
 
+	registerFavoriteServer(
+		grpcServer,
+		store,
+		fetcher,
+	)
+
 	go func() {
 		logrus.Infoln("Starting grpc server...")
 		if err := serverRunner.Run(ctx); err != nil {

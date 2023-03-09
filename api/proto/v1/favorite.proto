@@ -64,18 +64,18 @@ message GetFavoritesResponse {
 service FavoriteService {
   rpc AddItemToFavorites(AddItemToFavoritesRequest) returns (AddItemToFavoritesResponse) {
     option (google.api.http) = {
-      post: "/v1/favorite"
+      post: "/api/v1/favorite"
       body: "*"
     };
   }
   rpc RemoveItemFromFavorites(RemoveItemFromFavoritesRequest) returns (RemoveItemFromFavoritesResponse) {
     option (google.api.http) = {
-      delete: "/v1/favorite/{list_name}/{product_id}"
+      delete: "/api/v1/favorite/{list_name}/{product_id}"
     };
   }
   rpc GetFavorites(GetFavoritesRequest) returns (GetFavoritesResponse) {
     option (google.api.http) = {
-      get: "/v1/favorite/{list_name}"
+      get: "/api/v1/favorite/{list_name}"
 
     };
   }

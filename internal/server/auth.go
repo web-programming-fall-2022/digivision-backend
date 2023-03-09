@@ -87,6 +87,10 @@ func (s *AuthServiceServer) Register(ctx context.Context, req *pb.RegisterReques
 		logrus.Errorln(err)
 		return nil, status.Error(codes.Internal, "could not create user")
 	}
+	err = s.Storage.CreateFavoriteList(&storage.FavoriteList{UserID: user.ID, Name: "favorites"})
+	if err != nil {
+		logrus.Errorln(err)
+	}
 	authToken, refreshToken, err := s.generateTokens(&user)
 	if err != nil {
 		logrus.Errorln(err)
