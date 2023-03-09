@@ -67,7 +67,7 @@ func (storage *Storage) AddItemToList(listID uint, productID uint) error {
 
 func (storage *Storage) RemoveItemFromList(listID uint, productID uint) error {
 	item := FavoriteListItem{}
-	storage.DB.Where("favorites_list_id = ? AND product_id = ?", listID, productID).First(&item)
+	storage.DB.Where("favorite_list_id = ? AND product_id = ?", listID, productID).First(&item)
 	if item.ID == 0 {
 		return errors.New("item not found")
 	}

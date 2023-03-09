@@ -93,8 +93,14 @@ func (s *FavoriteServiceServer) GetFavorites(
 	if err != nil {
 		return nil, errors.NotFound
 	}
+	uniqueProductIDs := make(map[uint]interface{})
 	products := make([]rank.Product, 0)
 	for _, item := range list.Items {
+		_, ok := uniqueProductIDs[item.ProductID]
+		if ok {
+			continue
+		}
+		uniqueProductIDs[item.ProductID] = nil
 		products = append(products, rank.Product{
 			Id:    strconv.Itoa(int(item.ProductID)),
 			Score: 0,
