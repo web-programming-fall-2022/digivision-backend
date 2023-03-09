@@ -71,7 +71,11 @@ func (storage *Storage) RemoveItemFromList(listID uint, productID uint) error {
 	if item.ID == 0 {
 		return errors.New("item not found")
 	}
-	if err := storage.DB.Delete(&item).Error; err != nil {
+	item = FavoriteListItem{}
+	if err := storage.DB.Where(
+		"favorite_list_id = ? AND product_id = ?",
+		listID, productID,
+	).Delete(&item).Error; err != nil {
 		return err
 	}
 	return nil
