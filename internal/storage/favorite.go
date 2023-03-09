@@ -29,7 +29,7 @@ func (storage *Storage) CreateFavoriteList(list *FavoriteList) error {
 
 func (storage *Storage) GetFavoriteListByID(id uint) (*FavoriteList, error) {
 	list := FavoriteList{}
-	storage.DB.First(&list, id).Preload("items")
+	storage.DB.First(&list, id).Preload("Items")
 	if list.ID == 0 {
 		return nil, errors.New("list not found")
 	}
@@ -47,7 +47,7 @@ func (storage *Storage) GetFavoriteListsByUserID(userID uint) (*[]FavoriteList, 
 
 func (storage *Storage) GetFavoriteListByUserIDAndName(userID uint, name string) (*FavoriteList, error) {
 	list := FavoriteList{}
-	storage.DB.Where("user_id = ? AND name = ?", userID, name).First(&list)
+	storage.DB.Where("user_id = ? AND name = ?", userID, name).Preload("Items").First(&list)
 	if list.ID == 0 {
 		return nil, errors.New("list not found")
 	}
