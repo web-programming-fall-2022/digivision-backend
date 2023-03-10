@@ -213,7 +213,13 @@ func RunHttpServer(ctx context.Context, config cfg.Config) job.WithGracefulShutd
 			return runtime.DefaultHeaderMatcher(key)
 		}),
 	)
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	opts := []grpc.DialOption{
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallSendMsgSize(32*1024*1024),
+			grpc.MaxCallRecvMsgSize(32*1024*1024),
+		),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	}
 	if err := pb.RegisterSearchServiceHandlerFromEndpoint(ctx, mux, fmt.Sprintf("localhost:%d", config.Server.Port), opts); err != nil {
 		logrus.Fatal("Failed to start HTTP gateway for search", err.Error())
 	}
