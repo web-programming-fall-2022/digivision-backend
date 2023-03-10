@@ -176,6 +176,9 @@ func (s *SearchServiceServer) GetSearchHistories(
 
 	var respHistories []*pb.SearchHistory
 	for _, history := range histories {
+		if len(history.Results) == 0 {
+			continue
+		}
 		imageReader, err := s.s3Client.Download(ctx, "history-images", history.QueryAddress)
 		if err != nil {
 			logrus.Errorf("failed to download image: %v", err)
@@ -200,6 +203,9 @@ func (s *SearchServiceServer) GetSearchHistories(
 				continue
 			}
 			productsList = append(productsList, product.Product)
+		}
+		if len(productsList) == 0 {
+			continue
 		}
 		respHistories = append(respHistories, &pb.SearchHistory{
 			Id:       int32(history.ID),
