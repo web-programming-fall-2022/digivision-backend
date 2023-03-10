@@ -38,7 +38,7 @@ func (storage *Storage) GetSearchHistoryByID(id uint) (*SearchHistory, error) {
 
 func (storage *Storage) GetSearchHistoryByUserID(userID uint, offset int, limit int) ([]SearchHistory, error) {
 	history := make([]SearchHistory, 0)
-	storage.DB.Where("user_id = ?", userID).Offset(offset).Limit(limit).Find(&history)
+	storage.DB.Where("user_id = ?", userID).Offset(offset).Limit(limit).Preload("Results").Find(&history)
 	if len(history) == 0 {
 		return nil, errors.New("history not found")
 	}
